@@ -831,6 +831,7 @@ export class BotService {
     );
 
     await ctx.editMessageText(
+            payment.telegram_id,
       BotMessages.paymentDeclinedAdmin(payment),
       { 
         parse_mode: 'MarkdownV2',
