@@ -802,6 +802,7 @@ export class BotService {
 
     // Update admin message
     await ctx.editMessageText(
+           payment.telegram_id,
       BotMessages.paymentConfirmedAdmin(payment),
       { 
         parse_mode: 'MarkdownV2',
