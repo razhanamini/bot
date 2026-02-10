@@ -232,7 +232,7 @@ Please contact support if you believe this is an error\\.`;
 
 If you need assistance, please contact our support team directly via Telegram\\.
 
-*Your User ID:* \`telegramid\`  
+*Your User ID:* \`tlegamid\`  
 Please include this ID when contacting support\\.
 
 *Support Contact:* @v2ray\\_support`;
