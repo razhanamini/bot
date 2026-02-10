@@ -11,10 +11,10 @@ export class BotMessages {
 
   // Welcome message for /start command
   static welcomeMessage(user: any): string {
-    const balance = user.balance;
+    const balance = Math.floor(user.balance);
     const username = user.username ? `${this.escapeMarkdown(user.username)}` : 'N/A';
     
-    return `🎉 *Welcome to V2Ray Config Bot\\!*
+    return `🎉 *Welcome to V2Ray Config Bot\\*
 
 👤 *User Information:*
 *ID:* ${user.id}
