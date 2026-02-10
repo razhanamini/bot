@@ -38,17 +38,17 @@ CREATE TABLE payments (
 
 CREATE TABLE user_configs (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id),
-    service_id INTEGER REFERENCES services(id),
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    service_id INTEGER REFERENCES services(id) ON DELETE SET NULL,
     vless_link TEXT NOT NULL,
     status VARCHAR(50) DEFAULT 'active',
     expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    data_used_gb DECIMAL(10, 2) DEFAULT 0.00
-    ALTER TABLE user_configs ADD COLUMN IF NOT EXISTS client_email VARCHAR(255);
-    ALTER TABLE user_configs ADD COLUMN IF NOT EXISTS inbound_tag VARCHAR(100);
-    ALTER TABLE user_configs ADD COLUMN IF NOT EXISTS data_limit_gb DECIMAL(10,2);
+    data_used_gb DECIMAL(10, 2) DEFAULT 0.00,
+    client_email VARCHAR(255),
+    inbound_tag VARCHAR(100),
+    data_limit_gb DECIMAL(10, 2)
 );
 
 -- Create indexes
