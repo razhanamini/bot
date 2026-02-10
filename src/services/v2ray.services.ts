@@ -52,96 +52,149 @@ export class V2RayService {
 
   /**
    * Get current Xray configuration from server
+   * Response: { success: true, config: {...} }
    */
-async getConfig(): Promise<V2RayConfig> {
-  try {
-    console.log('📡 Fetching Xray config from server...');
-    const response = await this.http.get('/api/xray/config');
-    
-    // Debug log
-    console.log('🔍 Response structure:', Object.keys(response.data));
-    console.log('🔍 Has success key?', 'success' in response.data);
-    console.log('🔍 Has config key?', 'config' in response.data);
-    
-    let configData: V2RayConfig;
-    
-    // Check if config is nested under 'config' property
-    if (response.data.config) {
-      console.log('✅ Config found in response.data.config');
-      configData = response.data.config;
-    } else if (response.data.inbounds) {
-      // Fallback: config might be directly in response.data
-      console.log('⚠️ Config found directly in response.data');
-      configData = response.data;
-    } else {
-      console.error('❌ Unexpected response format:', response.data);
-      throw new Error('Unexpected response format from Xray API');
+  async getConfig(): Promise<V2RayConfig> {
+    try {
+      console.log('📡 Fetching Xray config from server...');
+      const response = await this.http.get('/api/xray/config');
+      
+      // Validate response structure
+      if (!response.data.success) {
+        throw new Error('API returned success: false');
+      }
+      
+      if (!response.data.config) {
+        throw new Error('No config in response');
+      }
+      
+      console.log('✅ Config fetched successfully');
+      return response.data.config;
+    } catch (error: any) {
+      console.error('❌ Error fetching Xray config:', error.message);
+      if (error.response) {
+        console.error('Response status:', error.response.status);
+        console.error('Response data:', error.response.data);
+      }
+      throw new Error(`Failed to get Xray config: ${error.message}`);
     }
-    
-    // Validate the config structure
-    if (!configData.inbounds) {
-      console.error('❌ Config missing "inbounds":', configData);
-      throw new Error('Config is missing "inbounds" property');
-    }
-    
-    console.log(`✅ Config parsed successfully. Inbounds: ${configData.inbounds.length}`);
-    
-    return configData;
-  } catch (error) {
-    console.error('❌ Error fetching Xray config:', error);
-    if (error) {
-      console.error('Response status:', error);
-      console.error('Response data:', error);
-    }
-    throw new Error(`Failed to get Xray config: ${error}`);
   }
-}
 
   /**
    * Update Xray configuration on server
+   * Request: { config: {...} }
+   * Response: { success: true, message: "...", backup: "..." }
    */
   async updateConfig(config: V2RayConfig): Promise<boolean> {
     try {
-      await this.http.put('/api/xray/config', config);
-      console.log('✅ Xray config updated successfully');
+      console.log('📤 Updating Xray config...');
+      
+      // Prepare request body matching API expectation
+      const requestBody = { config };
+      
+      const response = await this.http.put('/api/xray/config', requestBody);
+      
+      // Validate response
+      if (!response.data.success) {
+        throw new Error(`Update failed: ${response.data.message || 'Unknown error'}`);
+      }
+      
+      console.log(`✅ Xray config updated: ${response.data.message}`);
+      console.log(`📁 Backup created at: ${response.data.backup}`);
       return true;
-    } catch (error) {
-      console.error('Error updating Xray config:', error);
-      throw new Error(`Failed to update Xray config: ${error}`);
+    } catch (error: any) {
+      console.error('❌ Error updating Xray config:', error.message);
+      if (error.response) {
+        console.error('Response status:', error.response.status);
+        console.error('Response data:', error.response.data);
+      }
+      throw new Error(`Failed to update Xray config: ${error.message}`);
     }
   }
 
   /**
    * Restart Xray service
+   * Response: { success: true, message: "...", output: "" }
    */
   async restartService(): Promise<boolean> {
     try {
-      await this.http.post('/api/xray/status');
-      console.log('✅ Xray service restart requested');
+      console.log('🔄 Requesting Xray service restart...');
+      
+      const response = await this.http.post('/api/xray/restart');
+      
+      // Validate response
+      if (!response.data.success) {
+        throw new Error(`Restart failed: ${response.data.message || 'Unknown error'}`);
+      }
+      
+      console.log(`✅ Xray service restarted: ${response.data.message}`);
+      if (response.data.output) {
+        console.log(`📋 Output: ${response.data.output}`);
+      }
       return true;
-    } catch (error) {
-      console.error('Error restarting Xray service:', error);
-      throw new Error(`Failed to restart Xray service: ${error}`);
+    } catch (error: any) {
+      console.error('❌ Error restarting Xray service:', error.message);
+      if (error.response) {
+        console.error('Response status:', error.response.status);
+        console.error('Response data:', error.response.data);
+      }
+      throw new Error(`Failed to restart Xray service: ${error.message}`);
     }
   }
 
   /**
    * Get Xray status and bandwidth usage
+   * Response: { success: true, data: "stringified JSON" }
+   * Stringified JSON: { isOk: true, data: { users: [...] } }
    */
   async getStatus(): Promise<XrayStatusData> {
     try {
-      const response = await this.http.get<XrayStatusResponse>('/api/xray/status');
+      console.log('📡 Fetching Xray status...');
+      const response = await this.http.get('/api/xray/status');
       
-      if (typeof response.data.data === 'string') {
-        // Parse the stringified JSON
-        const parsedData = JSON.parse(response.data.data);
-        return parsedData;
-      } else {
-        return response.data.data;
+      // Validate response
+      if (!response.data.success) {
+        throw new Error('API returned success: false');
       }
-    } catch (error) {
-      console.error('Error fetching Xray status:', error);
-      throw new Error(`Failed to get Xray status: ${error}`);
+      
+      if (!response.data.data) {
+        throw new Error('No data in response');
+      }
+      
+      // Parse the stringified JSON
+      let parsedData: any;
+      if (typeof response.data.data === 'string') {
+        try {
+          parsedData = JSON.parse(response.data.data);
+        } catch (parseError: any) {
+          throw new Error(`Failed to parse status data: ${parseError.message}`);
+        }
+      } else {
+        parsedData = response.data.data;
+      }
+      
+      // Validate parsed data structure
+      if (!parsedData.isOk) {
+        throw new Error('Xray status is not OK');
+      }
+      
+      // Ensure users array exists
+      if (!parsedData.data) {
+        parsedData.data = {};
+      }
+      if (!parsedData.data.users) {
+        parsedData.data.users = [];
+      }
+      
+      console.log(`✅ Status fetched. Users: ${parsedData.data.users.length}`);
+      return parsedData;
+    } catch (error: any) {
+      console.error('❌ Error fetching Xray status:', error.message);
+      if (error.response) {
+        console.error('Response status:', error.response.status);
+        console.error('Response data:', error.response.data);
+      }
+      throw new Error(`Failed to get Xray status: ${error.message}`);
     }
   }
 
@@ -156,16 +209,23 @@ async getConfig(): Promise<V2RayConfig> {
     message?: string;
   }> {
     try {
+      console.log(`🚀 Creating service for user ${params.userEmail}...`);
+      
       // 1. Get current config
       const config = await this.getConfig();
       
-      // 2. Find VLESS inbound (usually the first one)
+      // 2. Find VLESS inbound (usually the first one with vless protocol)
       const vlessInbound = config.inbounds.find(inbound => 
-        inbound.protocol === 'vless' && inbound.tag.includes('reality')
+        inbound.protocol === 'vless'
       );
 
-      if (!vlessInbound || !vlessInbound.settings.clients) {
+      if (!vlessInbound) {
         throw new Error('No VLESS inbound found in configuration');
+      }
+
+      // Initialize clients array if it doesn't exist
+      if (!vlessInbound.settings.clients) {
+        vlessInbound.settings.clients = [];
       }
 
       // 3. Generate UUID and calculate expiry
@@ -194,16 +254,10 @@ async getConfig(): Promise<V2RayConfig> {
       await this.restartService();
       
       // 8. Generate VLESS link
-      const vlessLink = this.generateVlessLink(config, vlessInbound, newClient);
+      const vlessLink = this.generateVlessLink(vlessInbound, newClient);
       
-      // 9. Store in database
-      await db.createUserConfig(
-        params.userId,
-        params.serviceId,
-        vlessLink,
-        'active',
-        params.durationDays
-      );
+      // 9. Store in database with additional fields
+      await this.storeUserConfigInDatabase(params, vlessLink, newClient, vlessInbound);
 
       console.log(`✅ Service created for user ${params.userEmail} (ID: ${params.userId})`);
       
@@ -213,19 +267,59 @@ async getConfig(): Promise<V2RayConfig> {
         message: 'Service created successfully'
       };
 
-    } catch (error) {
-      console.error('Error creating V2Ray service:', error);
+    } catch (error: any) {
+      console.error('❌ Error creating V2Ray service:', error.message);
       return {
         success: false,
-        message: `Failed to create service: ${error}`
+        message: `Failed to create service: ${error.message}`
       };
     }
   }
 
   /**
-   * Generate VLESS link from config and client
+   * Store user config in database with all required fields
    */
-  private generateVlessLink(config: V2RayConfig, inbound: any, client: Client): string {
+  private async storeUserConfigInDatabase(
+    params: ServiceCreateParams,
+    vlessLink: string,
+    client: Client,
+    inbound: any
+  ): Promise<void> {
+    try {
+      // Calculate expiry date
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + params.durationDays);
+      
+      // Insert with all required fields
+      await db.query(
+        `INSERT INTO user_configs (
+          user_id, service_id, vless_link, status, expires_at,
+          data_used_gb, client_email, inbound_tag, data_limit_gb
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        [
+          params.userId,
+          params.serviceId,
+          vlessLink,
+          'active',
+          expiresAt,
+          0.00, // initial data used
+          client.email,
+          inbound.tag || 'vless-reality-inbound',
+          params.dataLimitGB
+        ]
+      );
+      
+      console.log('✅ User config stored in database');
+    } catch (error: any) {
+      console.error('❌ Error storing user config in database:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate VLESS link from inbound and client
+   */
+  private generateVlessLink(inbound: any, client: Client): string {
     const serverHost = process.env.XRAY_SERVER_HOST || 'your-server.com';
     const port = inbound.port;
     const uuid = client.id;
@@ -245,10 +339,6 @@ async getConfig(): Promise<V2RayConfig> {
       params.set('pbk', reality.privateKey || '');
       params.set('sid', reality.shortIds?.[0] || '');
       params.set('fp', reality.fingerprint || 'chrome');
-    } else if (security === 'tls') {
-      params.set('security', security);
-      params.set('sni', streamSettings?.tlsSettings?.serverName || '');
-      params.set('fp', streamSettings?.tlsSettings?.fingerprint || '');
     }
     
     params.set('flow', client.flow || '');
@@ -287,13 +377,13 @@ async getConfig(): Promise<V2RayConfig> {
       // 1. Get bandwidth usage from Xray
       const status = await this.getStatus();
       
-      if (!status.isOk || !status.data?.users) {
-        console.error('Invalid status response from Xray');
+      if (!status.isOk) {
+        console.error('Xray status not OK');
         return;
       }
 
       const bandwidthMap = new Map<string, UserBandwidth>();
-      status.data.users.forEach(user => {
+      status.data.users.forEach((user: UserBandwidth) => {
         bandwidthMap.set(user.username, user);
       });
 
@@ -306,8 +396,8 @@ async getConfig(): Promise<V2RayConfig> {
       }
 
       console.log('✅ Service monitoring completed');
-    } catch (error) {
-      console.error('Error in service monitoring:', error);
+    } catch (error: any) {
+      console.error('Error in service monitoring:', error.message);
     }
   }
 
@@ -321,16 +411,15 @@ async getConfig(): Promise<V2RayConfig> {
           uc.*, 
           u.telegram_id, 
           u.username as telegram_username,
-          s.name as service_name,
-          s.data_limit_gb
+          s.name as service_name
         FROM user_configs uc
         JOIN users u ON uc.user_id = u.id
         LEFT JOIN services s ON uc.service_id = s.id
         WHERE uc.status = 'active'
       `);
       return result.rows;
-    } catch (error) {
-      console.error('Error fetching active services:', error);
+    } catch (error: any) {
+      console.error('Error fetching active services:', error.message);
       return [];
     }
   }
@@ -355,8 +444,8 @@ async getConfig(): Promise<V2RayConfig> {
       // Update usage in database
       await this.updateServiceUsage(service.id, result.usedGB);
       
-    } catch (error) {
-      console.error(`Error checking service ${service.id}:`, error);
+    } catch (error: any) {
+      console.error(`Error checking service ${service.id}:`, error.message);
     }
   }
 
@@ -371,7 +460,7 @@ async getConfig(): Promise<V2RayConfig> {
     const usedBytes = bandwidth ? (bandwidth.uplink + bandwidth.downlink) : 0;
     const usedGB = usedBytes / 1073741824;
     
-    const totalGB = service.data_limit_gb || service.data_limit_gb;
+    const totalGB = service.data_limit_gb;
     const isDataLimitReached = totalGB ? usedGB >= totalGB : false;
     
     const now = new Date();
@@ -400,8 +489,8 @@ async getConfig(): Promise<V2RayConfig> {
         'UPDATE user_configs SET data_used_gb = $1, updated_at = NOW() WHERE id = $2',
         [usedGB, configId]
       );
-    } catch (error) {
-      console.error('Error updating service usage:', error);
+    } catch (error: any) {
+      console.error('Error updating service usage:', error.message);
     }
   }
 
@@ -424,12 +513,15 @@ async getConfig(): Promise<V2RayConfig> {
       // 3. Notify user via bot
       await this.notifyUser(
         service.telegram_id,
-        `⚠️ Your V2Ray service "${service.service_name}" has reached its data limit (${result.usedGB.toFixed(2)} GB used).\n\nService has been suspended.`
+        `⚠️ *Data Limit Reached*\n\n` +
+        `Your V2Ray service "${service.service_name}" has reached its data limit.\n` +
+        `📊 *Usage:* ${result.usedGB.toFixed(2)} GB / ${result.totalGB} GB\n` +
+        `\nService has been suspended.`
       );
       
       console.log(`✅ User ${result.userEmail} suspended due to data limit`);
-    } catch (error) {
-      console.error('Error handling data limit reached:', error);
+    } catch (error: any) {
+      console.error('Error handling data limit reached:', error.message);
     }
   }
 
@@ -450,12 +542,14 @@ async getConfig(): Promise<V2RayConfig> {
       // 3. Notify user via bot
       await this.notifyUser(
         service.telegram_id,
-        `⏰ Your V2Ray service "${service.service_name}" has expired.\n\nService has been deactivated.`
+        `⏰ *Service Expired*\n\n` +
+        `Your V2Ray service "${service.service_name}" has expired.\n` +
+        `\nService has been deactivated.`
       );
       
       console.log(`✅ User ${result.userEmail} service expired`);
-    } catch (error) {
-      console.error('Error handling service expiry:', error);
+    } catch (error: any) {
+      console.error('Error handling service expiry:', error.message);
     }
   }
 
@@ -469,7 +563,7 @@ async getConfig(): Promise<V2RayConfig> {
       
       // 2. Find VLESS inbound
       const vlessInbound = config.inbounds.find(inbound => 
-        inbound.protocol === 'vless' && inbound.tag.includes('reality')
+        inbound.protocol === 'vless'
       );
 
       if (!vlessInbound || !vlessInbound.settings.clients) {
@@ -479,7 +573,7 @@ async getConfig(): Promise<V2RayConfig> {
       // 3. Remove user from clients
       const initialCount = vlessInbound.settings.clients.length;
       vlessInbound.settings.clients = vlessInbound.settings.clients.filter(
-        client => client.email !== userEmail
+        (client: Client) => client.email !== userEmail
       );
       
       if (vlessInbound.settings.clients.length === initialCount) {
@@ -495,8 +589,8 @@ async getConfig(): Promise<V2RayConfig> {
       
       console.log(`✅ User ${userEmail} removed from Xray config`);
       return true;
-    } catch (error) {
-      console.error('Error removing user from config:', error);
+    } catch (error: any) {
+      console.error('Error removing user from config:', error.message);
       throw error;
     }
   }
@@ -512,8 +606,8 @@ async getConfig(): Promise<V2RayConfig> {
 
     try {
       await this.botService.sendNotification(telegramId, message);
-    } catch (error) {
-      console.error('Error notifying user:', error);
+    } catch (error: any) {
+      console.error('Error notifying user:', error.message);
     }
   }
 
@@ -532,7 +626,7 @@ async getConfig(): Promise<V2RayConfig> {
         throw new Error('Invalid status response');
       }
 
-      const user = status.data.users.find(u => u.username === userEmail);
+      const user = status.data.users.find((u: UserBandwidth) => u.username === userEmail);
       if (!user) {
         return { usedGB: 0 };
       }
@@ -553,8 +647,8 @@ async getConfig(): Promise<V2RayConfig> {
         totalGB: totalGB,
         percentage: percentage ? parseFloat(percentage.toFixed(1)) : undefined
       };
-    } catch (error) {
-      console.error('Error getting user bandwidth:', error);
+    } catch (error: any) {
+      console.error('Error getting user bandwidth:', error.message);
       throw error;
     }
   }

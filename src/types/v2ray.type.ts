@@ -128,6 +128,7 @@ export interface XrayStatusData {
   };
 }
 
+
 export interface UserBandwidth {
   username: string;
   uplink: number; // in bytes
