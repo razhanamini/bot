@@ -2,6 +2,7 @@ import { UserConfig } from "../database/models/config.model";
 import { Payment } from "../database/models/payment.model";
 import { Service } from "../database/models/service.model";
 import { VlessLinkGenerator, VlessLinkSet } from "../types/v2ray.links";
+import format from 'telegram-format';
 
 export class BotMessages {
   // Helper method to escape MarkdownV2 special characters
@@ -88,6 +89,7 @@ Use /buy to purchase a config or /test\\_config for a free test\\.`;
   // User configs list
   static userConfigs(configs: UserConfig[]): string {
     let message = `📋 *Your Active Configs:*\n\n`;
+    
     
     configs.forEach((config, index) => {
       const expiresDate = new Date(config.expires_at).toLocaleDateString();
@@ -326,6 +328,112 @@ static paymentVerificationRequired(payment: any, user: any): string {
     return `🔗 *${platformName} Configuration:*\n\n` +
       `\`${platformLink}\`\n\n` +
       `Copy this link and import it into your V2Ray client\\.`;
+  }
+
+
+
+  private static getStatusEmoji(status: string): string {
+    switch (status) {
+      case 'active': return '✅';
+      case 'test': return '🧪';
+      case 'suspended': return '⏸️';
+      case 'expired': return '⏰';
+      default: return '📋';
+    }
+  }
+
+
+
+  static userServices(services: any[]): string {
+    if (services.length === 0) {
+      return this.noActiveConfigs();
+    }
+
+    let message = format.markdown.bold('📋 Your Services Summary\n\n');
+    
+    // Count by status
+    const activeCount = services.filter(s => s.status === 'active').length;
+    const testCount = services.filter(s => s.status === 'test').length;
+    const suspendedCount = services.filter(s => s.status === 'suspended').length;
+    const expiredCount = services.filter(s => s.status === 'expired').length;
+    
+    const totalDataUsed = services.reduce((sum, s) => sum + parseFloat(s.data_used_gb || 0), 0);
+    
+    message += `✅ ${format.markdown.bold('Active:')} ${activeCount}\n`;
+    message += `🧪 ${format.markdown.bold('Test:')} ${testCount}\n`;
+    message += `⏸️ ${format.markdown.bold('Suspended:')} ${suspendedCount}\n`;
+    message += `⏰ ${format.markdown.bold('Expired:')} ${expiredCount}\n\n`;
+    
+    message += `💾 ${format.markdown.bold('Total Data Used:')} ${totalDataUsed.toFixed(2)} GB\n\n`;
+    
+    // List active services only (for compact view)
+    const activeServices = services.filter(s => s.status === 'active');
+    if (activeServices.length > 0) {
+      message += format.markdown.bold('📡 Active Services:\n');
+      activeServices.forEach((service, index) => {
+        const dataUsed = parseFloat(service.data_used_gb || 0).toFixed(2);
+        const dataLimit = service.data_limit_gb ? `${service.data_limit_gb} GB` : 'Unlimited';
+        const remainingDays = Math.ceil(
+          (new Date(service.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+        );
+        
+        message += `\n${index + 1}. ${format.markdown.bold(service.service_name || 'Service')}\n`;
+        message += `   📊 ${dataUsed} GB / ${dataLimit}\n`;
+        message += `   ⏰ ${remainingDays} days remaining\n`;
+      });
+    }
+    
+    message += '\n💡 For detailed view of all services, use /my_services_detailed';
+    
+    return message;
+  }
+
+  // Detailed view with service IDs for support reference
+  static userServicesDetailed(services: any[]): string {
+    if (services.length === 0) {
+      return this.noActiveConfigs();
+    }
+
+    let message = format.markdown.bold('📋 Detailed Service Information\n\n');
+    
+    services.forEach((service, index) => {
+      const expiresDate = new Date(service.expires_at).toLocaleDateString();
+      const createdDate = new Date(service.created_at).toLocaleDateString();
+      const updatedDate = new Date(service.updated_at).toLocaleDateString();
+      const remainingDays = Math.ceil(
+        (new Date(service.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+      );
+      
+      const dataUsed = parseFloat(service.data_used_gb || 0).toFixed(2);
+      const dataLimit = service.data_limit_gb 
+        ? `${service.data_limit_gb} GB` 
+        : 'Unlimited';
+      
+      message += `${index + 1}. ${format.markdown.bold('Service Information')}\n`;
+      message += `   ${format.markdown.bold('Service ID:')} ${service.config_id}\n`;
+      message += `   ${format.markdown.bold('Name:')} ${service.service_name || 'N/A'}\n`;
+      message += `   ${format.markdown.bold('Status:')} ${this.getStatusEmoji(service.status)} ${service.status}\n`;
+      message += `   ${format.markdown.bold('Created:')} ${createdDate}\n`;
+      message += `   ${format.markdown.bold('Last Updated:')} ${updatedDate}\n`;
+      message += `   ${format.markdown.bold('Expires:')} ${expiresDate} (${remainingDays > 0 ? `${remainingDays} days left` : 'Expired'})\n`;
+      message += `   ${format.markdown.bold('Data Used:')} ${dataUsed} GB / ${dataLimit}\n`;
+      
+      if (service.service_price) {
+        message += `   ${format.markdown.bold('Original Price:')} $${service.service_price}\n`;
+      }
+      
+      if (service.service_duration) {
+        message += `   ${format.markdown.bold('Original Duration:')} ${service.service_duration} days\n`;
+      }
+      
+      message += '\n';
+    });
+
+    message += format.markdown.bold('📝 Support Information:\n');
+    message += 'Please provide the Service ID when contacting support for faster assistance\n';
+    message += 'Use /support to contact our team';
+    
+    return message;
   }
 
 

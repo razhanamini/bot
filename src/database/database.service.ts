@@ -24,6 +24,7 @@ class DatabaseService {
     return result.rows[0];
   }
 
+
   async createUser(telegramId: number, username: string | null, firstName: string, lastName: string | null) {
     const result = await this.query(
       `INSERT INTO users (telegram_id, username, first_name, last_name, balance, created_at, updated_at, is_active)
@@ -132,6 +133,41 @@ class DatabaseService {
     );
     return result.rows[0];
   }
+
+
+  async getUserServices(userId: number): Promise<any[]> {
+  const result = await this.query(
+    `SELECT 
+      uc.id as config_id,
+      uc.status,
+      uc.expires_at,
+      uc.created_at,
+      uc.updated_at,
+      uc.data_used_gb,
+      uc.data_limit_gb,
+      s.id as service_id,
+      s.name as service_name,
+      s.description as service_description,
+      s.duration_days as service_duration,
+      s.price as service_price
+    FROM user_configs uc
+    LEFT JOIN services s ON uc.service_id = s.id
+    WHERE uc.user_id = $1
+    ORDER BY 
+      CASE uc.status 
+        WHEN 'active' THEN 1
+        WHEN 'test' THEN 2
+        WHEN 'suspended' THEN 3
+        WHEN 'expired' THEN 4
+        ELSE 5
+      END,
+      uc.expires_at DESC`,
+    [userId]
+  );
+  
+  return result.rows;
+}
+
 }
 
 export default new DatabaseService();

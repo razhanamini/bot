@@ -160,18 +160,20 @@ export class BotService {
     await ctx.deleteMessage();
   }
 
-  async handleMyServices(ctx: Context) {
-    const user = await db.getUserByTelegramId(ctx.from!.id);
-    const configs = await db.getUserConfigs(user.id);
-
-    if (configs.length === 0) {
-      await ctx.reply(BotMessages.noActiveConfigs(), { parse_mode: 'MarkdownV2' });
-      return;
-    }
-
-    const message = BotMessages.userConfigs(configs);
-    await ctx.reply(message, { parse_mode: 'MarkdownV2' });
+async handleMyServices(ctx: Context) {
+  const user = await db.getUserByTelegramId(ctx.from!.id);
+  
+  // Get user's services with accurate data usage from database
+  const userServices = await db.getUserServices(user.id);
+  
+  if (userServices.length === 0) {
+    await ctx.reply(BotMessages.noActiveConfigs(), { parse_mode: 'MarkdownV2' });
+    return;
   }
+
+  const message = BotMessages.userServices(userServices);
+  await ctx.reply(message, { parse_mode: 'MarkdownV2' });
+}
 
   // async handleTestConfig(ctx: Context) {
   //   const user = await db.getUserByTelegramId(ctx.from!.id);
