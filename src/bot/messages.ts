@@ -251,15 +251,18 @@ For tutorials and guides on how to use V2Ray configs, please join our tutorial c
   }
 
   // Payment verification required (admin)
-  static paymentVerificationRequired(payment: any, user: any): string {
-    const username = user.username ? `${this.escapeMarkdown(user.username)}` : 'N/A';
-    return `💰 *Payment Verification Required*
+// Payment verification required (admin)
+static paymentVerificationRequired(payment: any, user: any): string {
+  const username = user.username ? this.escapeMarkdown(user.username) : 'N/A';
+
+  return `💰 *Payment Verification Required*
 
 *Invoice:* \\#${this.escapeMarkdown(payment.invoice_number)}
 *User:* ${username} \\(ID: ${user.telegram_id}\\)
 *Amount:* \\$${Math.floor(payment.amount)}
 *Card:* ${this.escapeMarkdown(payment.card_number)}`;
-  }
+}
+
 
   // Callback query answers
   static callbackAnswers = {
