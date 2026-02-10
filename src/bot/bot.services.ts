@@ -801,7 +801,7 @@ export class BotService {
     );
 
     // Update admin message
-    await ctx.editMessageText(
+    await ctx.sendMessage(
            payment.telegram_id,
       BotMessages.paymentConfirmedAdmin(payment),
       { 
@@ -831,7 +831,7 @@ export class BotService {
       { parse_mode: 'MarkdownV2' }
     );
 
-    await ctx.editMessageText(
+    await ctx.sendMessage(
             payment.telegram_id,
       BotMessages.paymentDeclinedAdmin(payment),
       { 
