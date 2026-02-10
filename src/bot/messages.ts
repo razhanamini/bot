@@ -205,7 +205,7 @@ Please contact support if you believe this is an error\\.`;
   // My account information
   static accountInformation(user: any, configsCount: number): string {
     const balance = user.balance;
-    const username = user.username ? `@${this.escapeMarkdown(user.username)}` : 'N/A';
+    const username = user.username ? `@${this.escapeMarkdown(user.username)}` : 'NOUSERNAME';
     const name = `${this.escapeMarkdown(user.first_name)} ${user.last_name ? this.escapeMarkdown(user.last_name) : ''}`.trim();
     const accountCreated = new Date(user.created_at).toLocaleDateString();
     const status = user.is_active ? 'Active ✅' : 'Inactive ❌';
@@ -232,10 +232,10 @@ Please contact support if you believe this is an error\\.`;
 
 If you need assistance, please contact our support team directly via Telegram\\.
 
-*Your User ID:* \`tlegamid\`  
+*Your User ID:* \`${telegramId}\`  
 Please include this ID when contacting support\\.
 
-*Support Contact:* @v2ray\\_support`;
+*Support Contact:* v2raysupportid`;
   }
 
   // How to use message
