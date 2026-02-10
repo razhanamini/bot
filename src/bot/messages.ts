@@ -44,7 +44,7 @@ export class BotMessages {
     
     return `📦 *Service Details:*
 *Name:* ${this.escapeMarkdown(service.name)}
-*Price:* \\$${service.price}
+*Price:* \\$${Math.floor(service.price)}
 *Duration:* ${service.duration_days} days
 *Data Limit:* ${dataLimit}
 *Description:* ${this.escapeMarkdown(service.description)}
@@ -53,12 +53,12 @@ export class BotMessages {
   }
 
   // Insufficient funds
-  static insufficientFunds(userBalance: number | string, servicePrice: number): string {
-    const balance = userBalance;
+  static insufficientFunds(userBalance: number, servicePrice: number): string {
+    const balance = Math.floor(userBalance);
     return `⚠️ *Insufficient balance\\!*
 
 *Your balance:* \\$${balance}
-*Required:* \\$${servicePrice}
+*Required:* \\$${Math.floor(servicePrice)}
 
 Use /add\\_funds to add funds\\.`;
   }
@@ -129,7 +129,7 @@ Please enter the amount in USD \\(e\\.g\\., 10, 25, 50\\):`;
   // Payment invoice
   static paymentInvoice(payment: any, amount: number): string {
     const formattedAmount = amount;
-    return `💰 *Payment Invoice* \\#${payment.invoice_number}
+    return `💰 *Payment Invoice* \\#${this.escapeMarkdown(payment.invoice_number)}
 
 *Amount:* \\$${formattedAmount}
 *Card Number:* ${payment.card_number}
@@ -160,8 +160,8 @@ You will receive a notification when it\\'s confirmed\\.`;
   }
 
   // Payment confirmed (user notification)
-  static paymentConfirmedUser(amount: number | string): string {
-    const formattedAmount = amount;
+  static paymentConfirmedUser(amount: number ): string {
+    const formattedAmount = Math.floor(amount);
     return `✅ *Payment Confirmed\\!*
 
 *Amount:* \\$${formattedAmount}
@@ -199,7 +199,7 @@ Please contact support if you believe this is an error\\.`;
 
   // My account information
   static accountInformation(user: any, configsCount: number): string {
-    const balance = user.balance;
+    const balance = Math.floor(user.balance);
     const username = user.username ? `${this.escapeMarkdown(user.username)}` : 'NOUSERNAME';
     const name = `${this.escapeMarkdown(user.first_name)} ${user.last_name ? this.escapeMarkdown(user.last_name) : ''}`.trim();
     const accountCreated = new Date(user.created_at).toLocaleDateString();
