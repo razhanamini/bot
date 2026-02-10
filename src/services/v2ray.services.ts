@@ -53,15 +53,49 @@ export class V2RayService {
   /**
    * Get current Xray configuration from server
    */
-  async getConfig(): Promise<V2RayConfig> {
-    try {
-      const response = await this.http.get('/api/xray/config');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching Xray config:', error);
-      throw new Error(`Failed to get Xray config: ${error}`);
+async getConfig(): Promise<V2RayConfig> {
+  try {
+    console.log('📡 Fetching Xray config from server...');
+    const response = await this.http.get('/api/xray/config');
+    
+    // Debug log
+    console.log('🔍 Response structure:', Object.keys(response.data));
+    console.log('🔍 Has success key?', 'success' in response.data);
+    console.log('🔍 Has config key?', 'config' in response.data);
+    
+    let configData: V2RayConfig;
+    
+    // Check if config is nested under 'config' property
+    if (response.data.config) {
+      console.log('✅ Config found in response.data.config');
+      configData = response.data.config;
+    } else if (response.data.inbounds) {
+      // Fallback: config might be directly in response.data
+      console.log('⚠️ Config found directly in response.data');
+      configData = response.data;
+    } else {
+      console.error('❌ Unexpected response format:', response.data);
+      throw new Error('Unexpected response format from Xray API');
     }
+    
+    // Validate the config structure
+    if (!configData.inbounds) {
+      console.error('❌ Config missing "inbounds":', configData);
+      throw new Error('Config is missing "inbounds" property');
+    }
+    
+    console.log(`✅ Config parsed successfully. Inbounds: ${configData.inbounds.length}`);
+    
+    return configData;
+  } catch (error) {
+    console.error('❌ Error fetching Xray config:', error);
+    if (error) {
+      console.error('Response status:', error);
+      console.error('Response data:', error);
+    }
+    throw new Error(`Failed to get Xray config: ${error}`);
   }
+}
 
   /**
    * Update Xray configuration on server

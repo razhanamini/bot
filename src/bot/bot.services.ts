@@ -222,7 +222,8 @@ export class BotService {
     const result = await v2rayServices.createService(params);
 
     if (!result.success) {
-      throw new Error(result.message || 'Failed to create service');
+      console.log("❌❌❌ERROR CREATING SERICE in method v2rayServices.createService❌❌❌");
+      throw new Error(result.message || 'Failed to create service ');
     }
 
     // Deduct balance
@@ -248,7 +249,7 @@ export class BotService {
     console.error('Error creating service:', error);
     await ctx.answerCbQuery('❌ Service creation failed');
     await ctx.editMessageText(
-      `❌ Service creation failed: ${error}\n\nPlease contact support.`,
+      `❌ Service creation failed: \n\nPlease contact support.`,
       { parse_mode: 'MarkdownV2' }
     );
   }
