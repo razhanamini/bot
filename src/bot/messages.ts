@@ -4,17 +4,12 @@ export class BotMessages {
     return text.replace(/[_*[\]()~`>#+\-=|{}.!]/g, '\\$&');
   }
 
-  // Helper method to format balance with 2 decimals
-//   static formatBalance(balance: number | string): string {
-//     return Number(balance).toFixed(2);
-//   }
-
   // Welcome message for /start command
   static welcomeMessage(user: any): string {
     const balance = Math.floor(user.balance);
     const username = user.username ? `${this.escapeMarkdown(user.username)}` : 'N/A';
     
-    return `🎉 *Welcome to V2Ray Config Bot\\*
+    return `🎉 *Welcome to V2Ray Config Bot*
 
 👤 *User Information:*
 *ID:* ${user.id}
@@ -22,13 +17,13 @@ export class BotMessages {
 *Balance:* \\$${balance}
 
 *Available Commands:*
-/buy - Purchase V2Ray config
-/my\\_services - View your active configs
-/test\\_config - Get free test config
-/add\\_funds - Add funds to your account
-/my\\_account - View account details
-/support - Contact support
-/how\\_to\\_use - Tutorials and guides`;
+/buy  \\- Purchase V2Ray config
+/my_services  \\- View your active configs
+/test_config  \\- Get free test config
+/add_funds  \\- Add funds to your account
+/my_account  \\- View account details
+/support  \\- Contact support
+/how_to_use  \\- Tutorials and guides`;
   }
 
   // No services available
@@ -54,7 +49,7 @@ export class BotMessages {
 *Data Limit:* ${dataLimit}
 *Description:* ${this.escapeMarkdown(service.description)}
 
-*Proceed with purchase?*`;
+*Proceed with purchase\\?*`;
   }
 
   // Insufficient funds
@@ -277,4 +272,3 @@ For tutorials and guides on how to use V2Ray configs, please join our tutorial c
     paymentCancelled: 'Payment cancelled',
   };
 }
-
