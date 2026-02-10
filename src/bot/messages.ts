@@ -344,12 +344,24 @@ static paymentVerificationRequired(payment: any, user: any): string {
 
 
 
+ 
+  // Helper method to make text bold in MarkdownV2
+  static bold(text: string): string {
+    return `*${this.escapeMarkdown(text)}*`;
+  }
+
+  // Helper method to make text monospace in MarkdownV2
+  static monospace(text: string): string {
+    return `\`${this.escapeMarkdown(text)}\``;
+  }
+
+
   static userServices(services: any[]): string {
     if (services.length === 0) {
       return this.noActiveConfigs();
     }
 
-    let message = format.markdown.bold('📋 Your Services Summary\n\n');
+    let message = `📋 *Your Services Summary*\n\n`;
     
     // Count by status
     const activeCount = services.filter(s => s.status === 'active').length;
@@ -359,31 +371,34 @@ static paymentVerificationRequired(payment: any, user: any): string {
     
     const totalDataUsed = services.reduce((sum, s) => sum + parseFloat(s.data_used_gb || 0), 0);
     
-    message += `✅ ${format.markdown.bold('Active:')} ${activeCount}\n`;
-    message += `🧪 ${format.markdown.bold('Test:')} ${testCount}\n`;
-    message += `⏸️ ${format.markdown.bold('Suspended:')} ${suspendedCount}\n`;
-    message += `⏰ ${format.markdown.bold('Expired:')} ${expiredCount}\n\n`;
+    message += `✅ ${this.bold('Active:')} ${activeCount}\n`;
+    message += `🧪 ${this.bold('Test:')} ${testCount}\n`;
+    message += `⏸️ ${this.bold('Suspended:')} ${suspendedCount}\n`;
+    message += `⏰ ${this.bold('Expired:')} ${expiredCount}\n\n`;
     
-    message += `💾 ${format.markdown.bold('Total Data Used:')} ${totalDataUsed.toFixed(2)} GB\n\n`;
+    message += `💾 ${this.bold('Total Data Used:')} ${this.escapeMarkdown(totalDataUsed.toFixed(2))} GB\n\n`;
     
     // List active services only (for compact view)
     const activeServices = services.filter(s => s.status === 'active');
     if (activeServices.length > 0) {
-      message += format.markdown.bold('📡 Active Services:\n');
+      message += `${this.bold('📡 Active Services:')}\n`;
       activeServices.forEach((service, index) => {
         const dataUsed = parseFloat(service.data_used_gb || 0).toFixed(2);
-        const dataLimit = service.data_limit_gb ? `${service.data_limit_gb} GB` : 'Unlimited';
+        const dataLimit = service.data_limit_gb 
+          ? `${this.escapeMarkdown(service.data_limit_gb.toString())} GB` 
+          : 'Unlimited';
         const remainingDays = Math.ceil(
           (new Date(service.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
         );
         
-        message += `\n${index + 1}. ${format.markdown.bold(service.service_name || 'Service')}\n`;
-        message += `   📊 ${dataUsed} GB / ${dataLimit}\n`;
-        message += `   ⏰ ${remainingDays} days remaining\n`;
+        const serviceName = service.service_name || 'Service';
+        message += `\n${index + 1}\\. ${this.bold(this.escapeMarkdown(serviceName))}\n`;
+        message += `   📊 ${this.escapeMarkdown(dataUsed)} GB / ${dataLimit}\n`;
+        message += `   ⏰ ${this.escapeMarkdown(remainingDays.toString())} days remaining\n`;
       });
     }
     
-    message += '\n💡 For detailed view of all services, use /my_services_detailed';
+    message += '\n💡 For detailed view of all services, use /my\\_services\\_detailed';
     
     return message;
   }
