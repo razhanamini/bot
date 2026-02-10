@@ -385,7 +385,7 @@ export class V2RayService {
     }
 
     // Run every 60 minutes
-    cron.schedule('*/60 * * * *', async () => {
+    cron.schedule('*/1 * * * *', async () => {
       console.log('🔄 Running Xray service monitor...');
       await this.checkAndUpdateServices();
     });
