@@ -290,7 +290,7 @@ export class BotMessages {
     const balance = user.balance;
     const username = user.username ? `@${this.escapeMarkdown(user.username)}` : 'N/A';
     
-    return `🎉 Welcome to V2Ray Config Bot 
+    return `🎉 Welcome to V2Ray Config Bot
 
 👤 User Information:
 ID: ${user.id}
@@ -336,7 +336,7 @@ Proceed with purchase?`;
   // Insufficient funds
   static insufficientFunds(userBalance: number | string, servicePrice: number): string {
     const balance = userBalance;
-    return `⚠️ Insufficient balance 
+    return `⚠️ Insufficient balance
 
 Your balance: $${balance}
 Required: $${servicePrice}
