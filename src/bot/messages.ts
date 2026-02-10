@@ -1,6 +1,7 @@
 import { UserConfig } from "../database/models/config.model";
 import { Payment } from "../database/models/payment.model";
 import { Service } from "../database/models/service.model";
+import { VlessLinkGenerator, VlessLinkSet } from "../types/v2ray.links";
 
 export class BotMessages {
   // Helper method to escape MarkdownV2 special characters
@@ -66,17 +67,17 @@ Use /add\\_funds to add funds\\.`;
   }
 
   // Purchase successful
-  static purchaseSuccessful(service: any, vlessLink: string): string {
-    return `🎉 *Purchase Successful\\!*
+//   static purchaseSuccessful(service: any, vlessLink: string): string {
+//     return `🎉 *Purchase Successful\\!*
 
-*Service:* ${this.escapeMarkdown(service.name)}
-*Expires:* In ${service.duration_days} days
+// *Service:* ${this.escapeMarkdown(service.name)}
+// *Expires:* In ${service.duration_days} days
 
-*Your V2Ray Config:*
-\`${vlessLink}\`
+// *Your V2Ray Config:*
+// \`${vlessLink}\`
 
-📋 Use /my\\_services to view all your configs\\.`;
-  }
+// 📋 Use /my\\_services to view all your configs\\.`;
+//   }
 
   // No active configs
   static noActiveConfigs(): string {
@@ -278,4 +279,54 @@ static paymentVerificationRequired(payment: any, user: any): string {
     paymentDeclined: 'Payment declined',
     paymentCancelled: 'Payment cancelled',
   };
+
+
+
+
+  static purchaseSuccessful(service: any, links: VlessLinkSet): string {
+    return VlessLinkGenerator.formatForDisplay(links) + '\n\n' +
+      `🎉 *Purchase Successful\\!*\n\n` +
+      `*Service:* ${this.escapeMarkdown(service.name)}\n` +
+      `*Expires:* In ${service.duration_days} days\n\n` +
+      `📋 Use /my\\_services to view all your configs\\.`;
+  }
+
+  // Get platform-specific link
+  static getPlatformLinkMessage(links: VlessLinkSet, platform: string): string {
+    let platformLink = '';
+    let platformName = '';
+    
+    switch (platform.toLowerCase()) {
+      case 'android':
+        platformLink = links.android;
+        platformName = 'Android';
+        break;
+      case 'ios':
+        platformLink = links.ios;
+        platformName = 'iOS';
+        break;
+      case 'linux':
+        platformLink = links.linux;
+        platformName = 'Linux';
+        break;
+      case 'windows':
+        platformLink = links.windows;
+        platformName = 'Windows';
+        break;
+      case 'macos':
+      case 'mac':
+        platformLink = links.macos;
+        platformName = 'macOS';
+        break;
+      default:
+        platformLink = links.standard;
+        platformName = 'Standard';
+    }
+    
+    return `🔗 *${platformName} Configuration:*\n\n` +
+      `\`${platformLink}\`\n\n` +
+      `Copy this link and import it into your V2Ray client\\.`;
+  }
+
+
 }

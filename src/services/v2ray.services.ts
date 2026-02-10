@@ -13,6 +13,7 @@ import {
   ServiceCreateParams,
   ServiceMonitorResult 
 } from '../types/v2ray.type';
+import { VlessLinkGenerator, VlessLinkParams, VlessLinkSet } from '../types/v2ray.links';
 
 dotenv.config();
 
@@ -205,7 +206,7 @@ export class V2RayService {
    */
   async createService(params: ServiceCreateParams): Promise<{
     success: boolean;
-    vlessLink?: string;
+    links?: VlessLinkSet;
     message?: string;
   }> {
     try {
@@ -214,7 +215,7 @@ export class V2RayService {
       // 1. Get current config
       const config = await this.getConfig();
       
-      // 2. Find VLESS inbound (usually the first one with vless protocol)
+      // 2. Find VLESS inbound
       const vlessInbound = config.inbounds.find(inbound => 
         inbound.protocol === 'vless'
       );
@@ -253,17 +254,17 @@ export class V2RayService {
       // 7. Restart service to apply changes
       await this.restartService();
       
-      // 8. Generate VLESS link
-      const vlessLink = this.generateVlessLink(vlessInbound, newClient);
+      // 8. Generate VLESS links for all platforms
+      const links = this.generateVlessLinks(vlessInbound, newClient);
       
       // 9. Store in database with additional fields
-      await this.storeUserConfigInDatabase(params, vlessLink, newClient, vlessInbound);
+      await this.storeUserConfigInDatabase(params, links.standard, newClient, vlessInbound);
 
       console.log(`✅ Service created for user ${params.userEmail} (ID: ${params.userId})`);
       
       return {
         success: true,
-        vlessLink: vlessLink,
+        links: links,
         message: 'Service created successfully'
       };
 
@@ -319,33 +320,47 @@ export class V2RayService {
   /**
    * Generate VLESS link from inbound and client
    */
-  private generateVlessLink(inbound: any, client: Client): string {
-    const serverHost = process.env.XRAY_SERVER_HOST || 'your-server.com';
-    const port = inbound.port;
-    const uuid = client.id;
-    const email = encodeURIComponent(client.email);
+  private generateVlessLinks(inbound: any, client: Client): VlessLinkSet {
+    const serverHost = process.env.XRAY_SERVER_HOST || inbound.serverHost || 'your-server.com';
+    const serverPort = parseInt(process.env.XRAY_SERVER_PORT || inbound.port || '8445');
     
     const streamSettings = inbound.streamSettings;
     const security = streamSettings?.security || 'none';
-    const network = streamSettings?.network || 'tcp';
+    const networkType = streamSettings?.network || 'tcp';
     
-    let params = new URLSearchParams();
+    // Get reality settings from config or environment
+    let sni = '';
+    let publicKey = '';
+    let shortId = '';
     
     if (security === 'reality' && streamSettings?.realitySettings) {
       const reality = streamSettings.realitySettings;
-      params.set('type', network);
-      params.set('security', security);
-      params.set('sni', reality.serverNames?.[0] || '');
-      params.set('pbk', reality.privateKey || '');
-      params.set('sid', reality.shortIds?.[0] || '');
-      params.set('fp', reality.fingerprint || 'chrome');
+      sni = reality.serverNames?.[0] || process.env.REALITY_SNI || 'play.google.com';
+      publicKey = reality.publicKey || process.env.REALITY_PUBLIC_KEY || '';
+      shortId = reality.shortIds?.[0] || process.env.REALITY_SHORT_ID || '';
+    } else {
+      // Fallback to environment variables
+      sni = process.env.REALITY_SNI || 'play.google.com';
+      publicKey = process.env.REALITY_PUBLIC_KEY || '';
+      shortId = process.env.REALITY_SHORT_ID || '';
     }
     
-    params.set('flow', client.flow || '');
-    params.set('enc', inbound.settings.decryption || 'none');
+    // Prepare parameters for link generation
+    const linkParams: VlessLinkParams = {
+      uuid: client.id,
+      serverHost,
+      serverPort,
+      email: client.email,
+      security,
+      sni,
+      publicKey,
+      shortId,
+      networkType,
+      flow: client.flow || '',
+      encryption: inbound.settings.decryption || 'none'
+    };
     
-    const query = params.toString();
-    return `vless://${uuid}@${serverHost}:${port}?${query}#${email}`;
+    return VlessLinkGenerator.generateLinkSet(linkParams);
   }
 
   // ================ SERVICE MONITORING ================

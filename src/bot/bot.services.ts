@@ -194,12 +194,12 @@ export class BotService {
   //   );
   // }
 
-  async handleConfirmPurchase(ctx: any) {
+async handleConfirmPurchase(ctx: any) {
   const serviceId = parseInt(ctx.match[1]);
   const service = await db.getServiceById(serviceId);
   const user = await db.getUserByTelegramId(ctx.from.id);
 
-  if (Math.floor(user.balance) < Math.floor(service.price)) {
+  if (user.balance < service.price) {
     await ctx.answerCbQuery(BotMessages.callbackAnswers.insufficientFunds);
     await ctx.editMessageText(
       BotMessages.insufficientFunds(user.balance, service.price),
@@ -212,7 +212,7 @@ export class BotService {
     // Create V2Ray service
     const params = {
       userId: user.id,
-      userEmail: `${user.telegram_id}@v2ray.service`, // or use user.email if you have it
+      userEmail: `${user.telegram_id}@v2ray.service`,
       serviceId: service.id,
       serviceName: service.name,
       durationDays: service.duration_days,
@@ -222,8 +222,7 @@ export class BotService {
     const result = await v2rayServices.createService(params);
 
     if (!result.success) {
-      console.log("❌❌❌ERROR CREATING SERICE in method v2rayServices.createService❌❌❌");
-      throw new Error(result.message || 'Failed to create service ');
+      throw new Error(result.message || 'Failed to create service');
     }
 
     // Deduct balance
@@ -233,23 +232,33 @@ export class BotService {
     await db.createUserConfig(
       user.id, 
       service.id, 
-      result.vlessLink!, 
+      result.links!.standard, 
       'active', 
       service.duration_days
     );
 
     await ctx.answerCbQuery(BotMessages.callbackAnswers.purchaseSuccessful);
     
+    // Send the main message with all links
     await ctx.editMessageText(
-      BotMessages.purchaseSuccessful(service, result.vlessLink!),
+      BotMessages.purchaseSuccessful(service, result.links!),
       { parse_mode: 'MarkdownV2' }
     );
 
-  } catch (error) {
+    // Also send each platform link separately for easier copying
+    const platforms = ['Android', 'iOS', 'Windows', 'Linux', 'macOS'];
+    for (const platform of platforms) {
+      await ctx.reply(
+        BotMessages.getPlatformLinkMessage(result.links!, platform),
+        { parse_mode: 'MarkdownV2' }
+      );
+    }
+
+  } catch (error: any) {
     console.error('Error creating service:', error);
     await ctx.answerCbQuery('❌ Service creation failed');
     await ctx.editMessageText(
-      `❌ Service creation failed: \n\nPlease contact support.`,
+      `❌ Service creation failed: ${error.message}\n\nPlease contact support.`,
       { parse_mode: 'MarkdownV2' }
     );
   }
