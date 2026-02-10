@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: v2raybot
+      POSTGRES_PASSWORD: v2raypass123
+      POSTGRES_DB: v2ray_bot_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./src/database/migrations:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+  bot:
+    build: .
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: postgresql://v2raybot:v2raypass123@postgres:5432/v2ray_bot_db
+    restart: unless-stopped
+    volumes:
+      - ./src:/app/src
+      - ./uploads:/app/uploads
+
+volumes:
+  postgres_data:
