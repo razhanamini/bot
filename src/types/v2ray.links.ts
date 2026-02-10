@@ -25,6 +25,11 @@ export interface VlessLinkParams {
 }
 
 export class VlessLinkGenerator {
+
+      static escapeMarkdown(text: string): string {
+    return text.replace(/[_*[\]()~`>#+\-=|{}.!]/g, '\\$&');
+  }
+
   static generateLinkSet(params: VlessLinkParams): VlessLinkSet {
     const links: VlessLinkSet = {
       standard: this.generateLink(params, 'chrome'),
@@ -77,21 +82,21 @@ export class VlessLinkGenerator {
     let message = '🔗 *Your V2Ray Configurations:*\n\n';
     
     message += '📱 *Android:*\n';
-    message += `\`${links.android}\`\n\n`;
+    message += `\`${this.escapeMarkdown(links.android)}\`\n\n`;
     
     message += '🍎 *iOS:*\n';
-    message += `\`${links.ios}\`\n\n`;
+    message += `\`${this.escapeMarkdown(links.ios)}\`\n\n`;
     
     message += '🐧 *Linux:*\n';
-    message += `\`${links.linux}\`\n\n`;
+    message += `\`${this.escapeMarkdown(links.linux)}\`\n\n`;
     
     message += '🪟 *Windows:*\n';
-    message += `\`${links.windows}\`\n\n`;
+    message += `\`${this.escapeMarkdown(links.windows)}\`\n\n`;
     
     message += '🍏 *macOS:*\n';
-    message += `\`${links.macos}\`\n\n`;
+    message += `\`${this.escapeMarkdown(links.macos)}\`\n\n`;
     
-    message += '💡 *Usage Tip:* Copy the appropriate link for your device and import it into your V2Ray client.';
+    message += '💡 *Usage Tip:* Copy the appropriate link for your device and import it into your V2Ray client';
     
     return message;
   }
