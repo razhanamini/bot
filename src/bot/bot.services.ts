@@ -199,7 +199,7 @@ export class BotService {
   const service = await db.getServiceById(serviceId);
   const user = await db.getUserByTelegramId(ctx.from.id);
 
-  if (user.balance < service.price) {
+  if (Math.floor(user.balance) < Math.floor(service.price)) {
     await ctx.answerCbQuery(BotMessages.callbackAnswers.insufficientFunds);
     await ctx.editMessageText(
       BotMessages.insufficientFunds(user.balance, service.price),
