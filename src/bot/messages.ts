@@ -290,7 +290,7 @@ export class BotMessages {
     const balance = user.balance;
     const username = user.username ? `@${this.escapeMarkdown(user.username)}` : 'N/A';
     
-    return `🎉 Welcome to V2Ray Config Bot!
+    return `🎉 Welcome to V2Ray Config Bot 
 
 👤 User Information:
 ID: ${user.id}
@@ -336,7 +336,7 @@ Proceed with purchase?`;
   // Insufficient funds
   static insufficientFunds(userBalance: number | string, servicePrice: number): string {
     const balance = userBalance;
-    return `⚠️ Insufficient balance!
+    return `⚠️ Insufficient balance 
 
 Your balance: $${balance}
 Required: $${servicePrice}
@@ -346,7 +346,7 @@ Use /add_funds to add funds.`;
 
   // Purchase successful
   static purchaseSuccessful(service: any, vlessLink: string): string {
-    return `🎉 Purchase Successful!
+    return `🎉 Purchase Successful
 
 Service: ${this.escapeMarkdown(service.name)}
 Expires: In ${service.duration_days} days
@@ -390,7 +390,7 @@ Use /buy to purchase a config or /test_config for a free test.`;
 
   // Test config activated
   static testConfigActivated(vlessLink: string): string {
-    return `🎉 Free Test Config Activated!
+    return `🎉 Free Test Config Activated
 
 This test config will expire in 3 days.
 
@@ -435,7 +435,7 @@ Your payment will be processed once we verify the receipt.`;
 
   // Receipt received
   static receiptReceived(): string {
-    return `✅ Receipt received! Admins have been notified. Your payment will be processed shortly.  
+    return `✅ Receipt received Admins have been notified. Your payment will be processed shortly.  
 
 You will receive a notification when it's confirmed.`;
   }
@@ -443,12 +443,12 @@ You will receive a notification when it's confirmed.`;
   // Payment confirmed (user notification)
   static paymentConfirmedUser(amount: number | string): string {
     const formattedAmount = amount;
-    return `✅ Payment Confirmed!
+    return `✅ Payment Confirmed
 
 Amount: $${formattedAmount}
 New Balance: $${formattedAmount}
 
-Thank you for your payment!`;
+Thank you for your payment`;
   }
 
   // Payment confirmed (admin notification)
@@ -544,8 +544,8 @@ Card: ${payment.card_number}`;
   static callbackAnswers = {
     serviceNotFound: 'Service not found',
     purchaseCancelled: 'Purchase cancelled',
-    purchaseSuccessful: '✅ Purchase successful!',
-    insufficientFunds: '❌ Insufficient funds! Please add funds first.',
+    purchaseSuccessful: '✅ Purchase successful',
+    insufficientFunds: '❌ Insufficient funds Please add funds first.',
     pleaseSendReceipt: 'Please send the receipt photo now',
     paymentNotFound: 'Payment not found',
     paymentConfirmed: 'Payment confirmed',
