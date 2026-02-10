@@ -391,7 +391,7 @@ export class V2RayService {
     });
 
     this.isMonitoringActive = true;
-    console.log('✅ Xray service monitoring started (every 60 minutes)');
+    console.log('✅ Xray service monitoring started (every 1 minutes)');
   }
 
   /**
