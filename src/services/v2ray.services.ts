@@ -81,6 +81,11 @@ export class V2RayService {
     }
   }
 
+
+  private sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
   /**
    * Update Xray configuration on server
    * Request: { config: {...} }
@@ -117,31 +122,36 @@ export class V2RayService {
    * Restart Xray service
    * Response: { success: true, message: "...", output: "" }
    */
-  async restartService(): Promise<boolean> {
+  async restartService(maxRetries: number = 3): Promise<boolean> {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      console.log('🔄 Requesting Xray service restart...');
+      console.log(`🔄 [Attempt ${attempt}/${maxRetries}] Requesting Xray service restart...`);
       
-      const response = await this.http.post('/api/xray/restart');
+      const response = await this.http.post('/api/xray/restart', {}, {
+        timeout: 10000 // 10 second timeout per request
+      });
       
-      // Validate response
-      if (!response.data.success) {
-        throw new Error(`Restart failed: ${response.data.message || 'Unknown error'}`);
+      if (response.data.success) {
+        console.log(`✅ Xray service restarted: ${response.data.message}`);
+        return true;
       }
       
-      console.log(`✅ Xray service restarted: ${response.data.message}`);
-      if (response.data.output) {
-        console.log(`📋 Output: ${response.data.output}`);
-      }
-      return true;
+      console.error(`❌ Attempt ${attempt} failed: ${response.data.message}`);
+      
     } catch (error: any) {
-      console.error('❌ Error restarting Xray service:', error.message);
-      if (error.response) {
-        console.error('Response status:', error.response.status);
-        console.error('Response data:', error.response.data);
-      }
-      throw new Error(`Failed to restart Xray service: ${error.message}`);
+      console.error(`❌ Attempt ${attempt} error: ${error.message}`);
+    }
+    
+    // If not the last attempt, wait before retrying
+    if (attempt < maxRetries) {
+      const delay = 2000 * attempt; // 2s, 4s, 6s, etc.
+      console.log(`⏳ Waiting ${delay}ms before next attempt...`);
+      await this.sleep(delay);
     }
   }
+  
+  throw new Error(`Failed to restart Xray service after ${maxRetries} attempts`);
+}
 
   /**
    * Get Xray status and bandwidth usage

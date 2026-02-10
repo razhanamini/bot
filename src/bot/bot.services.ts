@@ -258,7 +258,7 @@ async handleConfirmPurchase(ctx: any) {
     console.error('Error creating service:', error);
     await ctx.answerCbQuery('❌ Service creation failed');
     await ctx.editMessageText(
-      `❌ Service creation failed: ${error.message}\n\nPlease contact support.`,
+      `❌ Service creation failed: \n\nPlease contact support.`,
       { parse_mode: 'MarkdownV2' }
     );
   }
