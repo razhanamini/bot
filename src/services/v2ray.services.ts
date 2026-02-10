@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import dotenv from 'dotenv';
+import dotenv, { config } from 'dotenv';
 import { v4 as uuidv4 } from 'uuid';
 import cron from 'node-cron';
 import db from '../database/database.service';
@@ -509,6 +509,7 @@ export class V2RayService {
    * Update service usage in database
    */
   private async updateServiceUsage(configId: number, usedGB: number): Promise<void> {
+    console.log(`the config id of ${configId} has used ${usedGB}s up to this point`);
     try {
       await db.query(
         'UPDATE user_configs SET data_used_gb = $1, updated_at = NOW() WHERE id = $2',
