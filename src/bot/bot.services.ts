@@ -212,7 +212,7 @@ async handleConfirmPurchase(ctx: any) {
     // Create V2Ray service
     const params = {
       userId: user.id,
-      userEmail: `${user.telegram_id}@v2ray.service`,
+      userEmail: `${user.telegram_id}@v2ray.${serviceId}.${Math.random().toString(8).substring(2)}`,
       serviceId: service.id,
       serviceName: service.name,
       durationDays: service.duration_days,
