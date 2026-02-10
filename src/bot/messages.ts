@@ -255,10 +255,10 @@ For tutorials and guides on how to use V2Ray configs, please join our tutorial c
     const username = user.username ? `${this.escapeMarkdown(user.username)}` : 'N/A';
     return `💰 *Payment Verification Required*
 
-*Invoice:* \\#${payment.invoice_number}
+*Invoice:* \\#${this.escapeMarkdown(payment.invoice_number)}
 *User:* ${username} \\(ID: ${user.telegram_id}\\)
-*Amount:* \\$${payment.amount}
-*Card:* ${payment.card_number}`;
+*Amount:* \\$${Math.floor(payment.amount)}
+*Card:* ${this.escapeMarkdown(payment.card_number)}`;
   }
 
   // Callback query answers
