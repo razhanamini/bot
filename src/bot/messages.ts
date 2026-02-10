@@ -1,3 +1,5 @@
+import { Service } from "../database/models/service.model";
+
 export class BotMessages {
   // Helper method to escape MarkdownV2 special characters
   static escapeMarkdown(text: string): string {
@@ -37,11 +39,9 @@ export class BotMessages {
   }
 
   // Service details
-  static serviceDetails(service: any): string {
-    const dataLimit = service.data_limit_gb 
-      ? `${service.data_limit_gb} GB` 
-      : 'Unlimited';
-    
+  static serviceDetails(service: Service): string {
+    const dataLimit = Math.floor(service.data_limit_gb); 
+       `${service.data_limit_gb} GB`    
     return `📦 *Service Details:*
 *Name:* ${this.escapeMarkdown(service.name)}
 *Price:* \\$${Math.floor(service.price)}
@@ -127,18 +127,20 @@ Please enter the amount in USD \\(e\\.g\\., 10, 25, 50\\):`;
   }
 
   // Payment invoice
-  static paymentInvoice(payment: any, amount: number): string {
-    const formattedAmount = amount;
-    return `💰 *Payment Invoice* \\#${this.escapeMarkdown(payment.invoice_number)}
+static paymentInvoice(payment: any, amount: number): string {
+  const formattedAmount = amount;
+  
+  return `💰 *Payment Invoice* \\#${this.escapeMarkdown(payment.invoice_number)}
 
 *Amount:* \\$${formattedAmount}
-*Card Number:* ${payment.card_number}
-*Bank:* Example Bank
-*Account Holder:* Your Company Name
+*Card Number:* ${this.escapeMarkdown(payment.card_number)}
+*Bank:* ${this.escapeMarkdown('1234 5678 9123 1233')}
+*Account Holder:* ${this.escapeMarkdown('Your Company Name')}
 
 Please transfer exactly \\$${formattedAmount} to the card number above\\.  
 Then click "I\\'ve Paid" below and send the receipt photo\\.`;
-  }
+}
+
 
   // Payment made prompt
   static paymentMadePrompt(): string {
