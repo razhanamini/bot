@@ -1,3 +1,4 @@
+import { Payment } from "../database/models/payment.model";
 import { Service } from "../database/models/service.model";
 
 export class BotMessages {
@@ -185,17 +186,17 @@ Thank you for your payment\\!`;
   static paymentDeclinedUser(payment: any): string {
     return `❌ *Payment Declined*
 
-Payment \\#${payment.invoice_number} has been declined\\.  
+Payment \\#${this.escapeMarkdown(payment.invoice_number)} has been declined\\.  
 
 Please contact support if you believe this is an error\\.`;
   }
 
   // Payment declined (admin notification)
-  static paymentDeclinedAdmin(payment: any): string {
-    const username = payment.username ? `${this.escapeMarkdown(payment.username)}` : 'N/A';
-    return `❌ *Payment* \\#${payment.invoice_number} *declined\\.*
+  static paymentDeclinedAdmin(payment: Payment): string {
+    const username = payment.user_id;
+    return `❌ *Payment* \\#${this.escapeMarkdown(payment.invoice_number)} *declined\\.*
 *User:* ${username}
-*Amount:* \\$${payment.amount}
+*Amount:* \\$${Math.floor(payment.amount)}
 *Status:* DECLINED`;
   }
 
