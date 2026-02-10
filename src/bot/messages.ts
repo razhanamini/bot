@@ -5,13 +5,13 @@ export class BotMessages {
   }
 
   // Helper method to format balance with 2 decimals
-  static formatBalance(balance: number | string): string {
-    return Number(balance).toFixed(2);
-  }
+//   static formatBalance(balance: number | string): string {
+//     return Number(balance).toFixed(2);
+//   }
 
   // Welcome message for /start command
   static welcomeMessage(user: any): string {
-    const balance = this.formatBalance(user.balance);
+    const balance = user.balance;
     const username = user.username ? `@${this.escapeMarkdown(user.username)}` : 'N/A';
     
     return `🎉 *Welcome to V2Ray Config Bot\\!*
@@ -59,7 +59,7 @@ export class BotMessages {
 
   // Insufficient funds
   static insufficientFunds(userBalance: number | string, servicePrice: number): string {
-    const balance = this.formatBalance(userBalance);
+    const balance = userBalance;
     return `⚠️ *Insufficient balance\\!*
 
 *Your balance:* \\$${balance}
@@ -133,7 +133,7 @@ Please enter the amount in USD \\(e\\.g\\., 10, 25, 50\\):`;
 
   // Payment invoice
   static paymentInvoice(payment: any, amount: number): string {
-    const formattedAmount = this.formatBalance(amount);
+    const formattedAmount = amount;
     return `💰 *Payment Invoice* \\#${payment.invoice_number}
 
 *Amount:* \\$${formattedAmount}
@@ -166,7 +166,7 @@ You will receive a notification when it\\'s confirmed\\.`;
 
   // Payment confirmed (user notification)
   static paymentConfirmedUser(amount: number | string): string {
-    const formattedAmount = this.formatBalance(amount);
+    const formattedAmount = amount;
     return `✅ *Payment Confirmed\\!*
 
 *Amount:* \\$${formattedAmount}
@@ -180,7 +180,7 @@ Thank you for your payment\\!`;
     const username = payment.username ? `@${this.escapeMarkdown(payment.username)}` : 'N/A';
     return `✅ *Payment* \\#${payment.invoice_number} *confirmed\\.*
 *User:* ${username}
-*Amount:* \\$${this.formatBalance(payment.amount)}
+*Amount:* \\$${payment.amount}
 *Status:* CONFIRMED`;
   }
 
@@ -198,13 +198,13 @@ Please contact support if you believe this is an error\\.`;
     const username = payment.username ? `@${this.escapeMarkdown(payment.username)}` : 'N/A';
     return `❌ *Payment* \\#${payment.invoice_number} *declined\\.*
 *User:* ${username}
-*Amount:* \\$${this.formatBalance(payment.amount)}
+*Amount:* \\$${payment.amount}
 *Status:* DECLINED`;
   }
 
   // My account information
   static accountInformation(user: any, configsCount: number): string {
-    const balance = this.formatBalance(user.balance);
+    const balance = user.balance;
     const username = user.username ? `@${this.escapeMarkdown(user.username)}` : 'N/A';
     const name = `${this.escapeMarkdown(user.first_name)} ${user.last_name ? this.escapeMarkdown(user.last_name) : ''}`.trim();
     const accountCreated = new Date(user.created_at).toLocaleDateString();
@@ -232,7 +232,7 @@ Please contact support if you believe this is an error\\.`;
 
 If you need assistance, please contact our support team directly via Telegram\\.
 
-*Your User ID:* \`${telegramId}\`  
+*Your User ID:* \`telegramid\`  
 Please include this ID when contacting support\\.
 
 *Support Contact:* @v2ray\\_support`;
@@ -260,7 +260,7 @@ For tutorials and guides on how to use V2Ray configs, please join our tutorial c
 
 *Invoice:* \\#${payment.invoice_number}
 *User:* ${username} \\(ID: ${user.telegram_id}\\)
-*Amount:* \\$${this.formatBalance(payment.amount)}
+*Amount:* \\$${payment.amount}
 *Card:* ${payment.card_number}`;
   }
 
