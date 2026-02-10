@@ -231,13 +231,13 @@ async handleConfirmPurchase(ctx: any) {
     await db.updateUserBalance(user.id, -service.price);
     
     // Create config record (already done in createService, but we have the link)
-    await db.createUserConfig(
-      user.id, 
-      service.id, 
-      result.links!.standard, 
-      'active', 
-      service.duration_days
-    );
+    // await db.createUserConfig(
+    //   user.id, 
+    //   service.id, 
+    //   result.links!.standard, 
+    //   'active', 
+    //   service.duration_days
+    // );
 
     await ctx.answerCbQuery(BotMessages.callbackAnswers.purchaseSuccessful);
     
@@ -248,13 +248,13 @@ async handleConfirmPurchase(ctx: any) {
     );
 
     // Also send each platform link separately for easier copying
-    const platforms = ['Android', 'iOS', 'Windows', 'Linux', 'macOS'];
-    for (const platform of platforms) {
-      await ctx.reply(
-        BotMessages.getPlatformLinkMessage(result.links!, platform),
-        { parse_mode: 'MarkdownV2' }
-      );
-    }
+    // const platforms = ['Android', 'iOS', 'Windows', 'Linux', 'macOS'];
+    // for (const platform of platforms) {
+    //   await ctx.reply(
+    //     BotMessages.getPlatformLinkMessage(result.links!, platform),
+    //     { parse_mode: 'MarkdownV2' }
+    //   );
+    // }
 
   } catch (error: any) {
     console.error('Error creating service:', error);
