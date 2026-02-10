@@ -403,21 +403,21 @@ Then click "I've Paid" below and send the receipt photo.
   }
 
   async handleMyAccount(ctx: Context) {
-    const user = await db.getUserByTelegramId(ctx.from!.id);
-    
-    // Get active services count
-    const configs = await db.getUserConfigs(user.id);
-    
-    const message = `
+  const user = await db.getUserByTelegramId(ctx.from!.id);
+  
+  // Get active services count
+  const configs = await db.getUserConfigs(user.id);
+  
+  const message = `
 👤 Account Information:
 
 User ID: ${user.id}
 Telegram ID: ${user.telegram_id}
-Username: @${user.username || 'N/A'}
+Username: ${user.username ? '@' + user.username : 'N/A'}
 Name: ${user.first_name} ${user.last_name || ''}
 Account Created: ${new Date(user.created_at).toLocaleDateString()}
 
-💰 Balance: $${user.balance}
+💰 Balance: $${Number(user.balance)}
 📡 Active Configs: ${configs.length}
 🔄 Status: ${user.is_active ? 'Active ✅' : 'Inactive ❌'}
 
@@ -425,10 +425,10 @@ Account Created: ${new Date(user.created_at).toLocaleDateString()}
 📦 Use /buy to purchase configs
     `;
 
-    await ctx.reply(message, {
-      parse_mode: 'Markdown'
-    });
-  }
+  await ctx.reply(message, {
+    parse_mode: 'HTML',  // Change from 'Markdown' to 'HTML' or remove entirely
+  });
+}
 
   async handleSupport(ctx: Context) {
     const user = await db.getUserByTelegramId(ctx.from!.id);
