@@ -12,7 +12,7 @@ export class BotMessages {
   // Welcome message for /start command
   static welcomeMessage(user: any): string {
     const balance = user.balance;
-    const username = user.username ? `@${this.escapeMarkdown(user.username)}` : 'N/A';
+    const username = user.username ? `${this.escapeMarkdown(user.username)}` : 'N/A';
     
     return `🎉 *Welcome to V2Ray Config Bot\\!*
 
@@ -177,7 +177,7 @@ Thank you for your payment\\!`;
 
   // Payment confirmed (admin notification)
   static paymentConfirmedAdmin(payment: any): string {
-    const username = payment.username ? `@${this.escapeMarkdown(payment.username)}` : 'N/A';
+    const username = payment.username ? `${this.escapeMarkdown(payment.username)}` : 'N/A';
     return `✅ *Payment* \\#${payment.invoice_number} *confirmed\\.*
 *User:* ${username}
 *Amount:* \\$${payment.amount}
@@ -195,7 +195,7 @@ Please contact support if you believe this is an error\\.`;
 
   // Payment declined (admin notification)
   static paymentDeclinedAdmin(payment: any): string {
-    const username = payment.username ? `@${this.escapeMarkdown(payment.username)}` : 'N/A';
+    const username = payment.username ? `${this.escapeMarkdown(payment.username)}` : 'N/A';
     return `❌ *Payment* \\#${payment.invoice_number} *declined\\.*
 *User:* ${username}
 *Amount:* \\$${payment.amount}
@@ -205,7 +205,7 @@ Please contact support if you believe this is an error\\.`;
   // My account information
   static accountInformation(user: any, configsCount: number): string {
     const balance = user.balance;
-    const username = user.username ? `@${this.escapeMarkdown(user.username)}` : 'NOUSERNAME';
+    const username = user.username ? `${this.escapeMarkdown(user.username)}` : 'NOUSERNAME';
     const name = `${this.escapeMarkdown(user.first_name)} ${user.last_name ? this.escapeMarkdown(user.last_name) : ''}`.trim();
     const accountCreated = new Date(user.created_at).toLocaleDateString();
     const status = user.is_active ? 'Active ✅' : 'Inactive ❌';
@@ -255,7 +255,7 @@ For tutorials and guides on how to use V2Ray configs, please join our tutorial c
 
   // Payment verification required (admin)
   static paymentVerificationRequired(payment: any, user: any): string {
-    const username = user.username ? `@${this.escapeMarkdown(user.username)}` : 'N/A';
+    const username = user.username ? `${this.escapeMarkdown(user.username)}` : 'N/A';
     return `💰 *Payment Verification Required*
 
 *Invoice:* \\#${payment.invoice_number}
