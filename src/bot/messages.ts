@@ -175,9 +175,9 @@ Thank you for your payment\\!`;
   // Payment confirmed (admin notification)
   static paymentConfirmedAdmin(payment: any): string {
     const username = payment.username ? `${this.escapeMarkdown(payment.username)}` : 'N/A';
-    return `✅ *Payment* \\#${payment.invoice_number} *confirmed\\.*
+    return `✅ *Payment* \\#${this.escapeMarkdown(payment.invoice_number)} *confirmed\\.*
 *User:* ${username}
-*Amount:* \\$${payment.amount}
+*Amount:* \\$${this.escapeMarkdown(payment.amount)}
 *Status:* CONFIRMED`;
   }
 
