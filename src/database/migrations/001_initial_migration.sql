@@ -64,5 +64,5 @@ INSERT INTO services (name, description, price, duration_days, data_limit_gb, is
 ('Basic Plan', '1 month V2Ray config with 100GB data', 10, 30, 100, true),
 ('Standard Plan', '3 months V2Ray config with 300GB data', 20, 90, 300, true),
 ('Premium Plan', '6 months V2Ray config with 1TB data', 30, 180, 1024, true),
-('Unlimited Plan', '1 year unlimited V2Ray config', 70, 365, NULL, true);
-('Basic Plan', '1 day V2Ray config with 1GB data', 1, 1, 1, true),
+('Unlimited Plan', '1 year unlimited V2Ray config', 70, 365, NULL, true),
+('Test Plan', '1 day V2Ray config with 1GB data', 1, 1, 1, true);
