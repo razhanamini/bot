@@ -69,7 +69,7 @@ export class BotService {
 👤 User Information:
 ID: ${user.id}
 Username: @${user.username || 'N/A'}
-Balance: $${user.balance.toFixed(2)}
+Balance: $${user.balance}
 
 Available Commands:
 /buy - Purchase V2Ray config
@@ -417,7 +417,7 @@ Username: @${user.username || 'N/A'}
 Name: ${user.first_name} ${user.last_name || ''}
 Account Created: ${new Date(user.created_at).toLocaleDateString()}
 
-💰 Balance: $${user.balance.toFixed(2)}
+💰 Balance: $${user.balance}
 📡 Active Configs: ${configs.length}
 🔄 Status: ${user.is_active ? 'Active ✅' : 'Inactive ❌'}
 
