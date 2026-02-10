@@ -8,3 +8,4 @@ export interface Service {
   is_active: boolean;
   created_at: Date;
 }
+

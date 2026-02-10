@@ -1,3 +1,4 @@
+import { UserConfig } from "../database/models/config.model";
 import { Payment } from "../database/models/payment.model";
 import { Service } from "../database/models/service.model";
 
@@ -84,19 +85,19 @@ Use /buy to purchase a config or /test\\_config for a free test\\.`;
   }
 
   // User configs list
-  static userConfigs(configs: any[]): string {
+  static userConfigs(configs: UserConfig[]): string {
     let message = `📋 *Your Active Configs:*\n\n`;
     
     configs.forEach((config, index) => {
       const expiresDate = new Date(config.expires_at).toLocaleDateString();
       const remainingDays = Math.ceil((new Date(config.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-      const dataUsed = Number(config.data_used_gb).toFixed(2);
-      const dataLimit = config.data_limit_gb ? ` / ${config.data_limit_gb} GB limit` : ' / Unlimited';
+      const dataUsed = Math.floor(config.data_used_gb);
+      // const dataLimit = config.data_limit_gb ? ` / ${config.data_limit_gb} GB limit` : ' / Unlimited';
       
-      message += `${index + 1}\\. *${this.escapeMarkdown(config.service_name)}*\n`;
+      message += `${index + 1}\\. *${config.service_id}*\n`;
       message += `   *Status:* ${config.status}\n`;
       message += `   *Expires:* ${expiresDate} \\(${remainingDays} days left\\)\n`;
-      message += `   *Data:* ${dataUsed} GB used${dataLimit}\n`;
+      message += `   *Data:* ${dataUsed} GB used\n`;
       message += `   *Link:* \`${config.vless_link}\`\n\n`;
     });
 
@@ -174,11 +175,11 @@ Thank you for your payment\\!`;
   }
 
   // Payment confirmed (admin notification)
-  static paymentConfirmedAdmin(payment: any): string {
-    const username = payment.username ? `${this.escapeMarkdown(payment.username)}` : 'N/A';
+  static paymentConfirmedAdmin(payment: Payment): string {
+    const username = payment.user_id ;
     return `✅ *Payment* \\#${this.escapeMarkdown(payment.invoice_number)} *confirmed\\.*
 *User:* ${username}
-*Amount:* \\$${this.escapeMarkdown(payment.amount)}
+*Amount:* \\$${Math.floor(payment.amount)}
 *Status:* CONFIRMED`;
   }
 
