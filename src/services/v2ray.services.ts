@@ -25,7 +25,7 @@ export class V2RayService {
   private botService: BotService | null = null;
   private isMonitoringActive: boolean = false;
   private httpInstances: Map<number, AxiosInstance> = new Map();
-
+  private realityPK = process.env.REALITY_PUBLIC_KEY;
   constructor() {
     console.log('🔧 V2Ray service initialized (multi-server mode)');
   }
@@ -322,13 +322,12 @@ export class V2RayService {
     const networkType = streamSettings?.network || 'tcp';
     
     let sni = '';
-    let publicKey = '';
+    let publicKey = process.env.REALITY_PUBLIC_KEY;
     let shortId = '';
     
     if (security === 'reality' && streamSettings?.realitySettings) {
       const reality = streamSettings.realitySettings;
       sni = reality.serverNames?.[0] || 'play.google.com';
-      publicKey = reality.publicKey || reality.privateKey || '';
       shortId = reality.shortIds?.[0] || '';
     }
     

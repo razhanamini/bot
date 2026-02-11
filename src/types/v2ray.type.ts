@@ -186,7 +186,7 @@ export interface VlessLinkParams {
     email: string;
     security: string;
     sni: string;
-    publicKey: string;
+    publicKey: string | undefined;
     shortId: string;
     networkType: string;
     flow?: string;

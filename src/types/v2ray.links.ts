@@ -1,3 +1,5 @@
+import { VlessLinkParams } from "./v2ray.type";
+
 export interface VlessLinkSet {
   standard: string;       // Default link (chrome fingerprint)
   android: string;        // Android link (ios fingerprint)
@@ -10,19 +12,19 @@ export interface VlessLinkSet {
   qrCodeWindows?: string; // QR code data for Windows
 }
 
-export interface VlessLinkParams {
-  uuid: string;
-  serverHost: string;
-  serverPort: number;
-  email: string;
-  security: string;
-  sni: string;
-  publicKey: string;
-  shortId: string;
-  networkType: string;
-  flow?: string;
-  encryption?: string;
-}
+// export interface VlessLinkParams {
+//   uuid: string;
+//   serverHost: string;
+//   serverPort: number;
+//   email: string;
+//   security: string;
+//   sni: string;
+//   publicKey: string;
+//   shortId: string;
+//   networkType: string;
+//   flow?: string;
+//   encryption?: string;
+// }
 
 export class VlessLinkGenerator {
 
@@ -51,22 +53,8 @@ export class VlessLinkGenerator {
   private static generateLink(params: VlessLinkParams, fingerprint: string): string {
     const queryParams = new URLSearchParams();
     
-    // Add required parameters
-    queryParams.set('type', params.networkType);
-    queryParams.set('security', params.security);
-    queryParams.set('sni', params.sni);
-    queryParams.set('pbk', params.publicKey);
-    queryParams.set('sid', params.shortId);
-    queryParams.set('fp', fingerprint);
-    queryParams.set('encryption', params.encryption || 'none');
-    
-    // Add optional parameters
-    if (params.flow) {
-      queryParams.set('flow', params.flow);
-    }
 
-    const queryString = queryParams.toString();
-    const encodedEmail = encodeURIComponent(params.email);
+
     
     return `vless://${params.uuid}@${params.serverHost}:${params.serverPort}?security=reality&encryption=none&pbk=${params.publicKey}&headerType=none&fp=${fingerprint}&type=tcp&sni=${params.sni}&sid=${params.shortId}#${params.email}`;
   }
