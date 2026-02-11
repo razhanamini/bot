@@ -39,17 +39,27 @@ export class BotService {
     });
   }
 
-  private setupCommands() {
-    this.bot.command('start', (ctx) => this.handleStart(ctx));
-    this.bot.command('buy', (ctx) => this.handleBuyService(ctx));
-    this.bot.command('my_services', (ctx) => this.handleMyServices(ctx));
-    this.bot.command('add_funds', (ctx) => this.handleAddFunds(ctx));
-    this.bot.command('my_account', (ctx) => this.handleMyAccount(ctx));
-    this.bot.command('support', (ctx) => this.handleSupport(ctx));
-    this.bot.command('how_to_use', (ctx) => this.handleHowToUse(ctx));
-    this.bot.command('test_service', (ctx) => this.handleTestConfig(ctx));
+  // private setupCommands() {
+  //   this.bot.command('start', (ctx) => this.handleStart(ctx));
+  //   this.bot.command('buy', (ctx) => this.handleBuyService(ctx));
+  //   this.bot.command('my_services', (ctx) => this.handleMyServices(ctx));
+  //   this.bot.command('add_funds', (ctx) => this.handleAddFunds(ctx));
+  //   this.bot.command('my_account', (ctx) => this.handleMyAccount(ctx));
+  //   this.bot.command('support', (ctx) => this.handleSupport(ctx));
+  //   this.bot.command('how_to_use', (ctx) => this.handleHowToUse(ctx));
+  //   this.bot.command('test_service', (ctx) => this.handleTestConfig(ctx));
 
-  }
+  // }
+  private setupCommands() {
+  this.bot.command('start', (ctx) => this.handleStart(ctx));
+  this.bot.command('buy', (ctx) => this.handleBuyService(ctx));
+  this.bot.command('my_services', (ctx) => this.handleMyServices(ctx));
+  this.bot.command('add_funds', (ctx) => this.handleAddFunds(ctx));
+  this.bot.command('my_account', (ctx) => this.handleMyAccount(ctx));
+  this.bot.command('support', (ctx) => this.handleSupport(ctx));
+  this.bot.command('how_to_use', (ctx) => this.handleHowToUse(ctx));
+  this.bot.command('test_config', (ctx) => this.handleTestConfig(ctx)); // ✅ Fixed: changed from 'test_service' to 'test_config'
+}
 
   private setupCallbacks() {
     this.bot.action(/^service_(\d+)$/, async (ctx) => this.handleServiceSelect(ctx));
