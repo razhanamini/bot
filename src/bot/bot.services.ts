@@ -112,11 +112,12 @@ export class BotService {
     await ctx.reply(message, {
       parse_mode: 'MarkdownV2',
       ...Markup.keyboard([
-       ['/buy 🛒 خرید', '/my_services 📋 سرویس‌های من'],
-    ['/test_config 🎁 تست رایگان', '/add_funds 💰 افزایش موجودی'],
-    ['/my_account 👤 حساب من', '/support 🆘 پشتیبانی']
+        ['🛒 خرید', '📋 سرویس‌های من'],
+        ['🎁 تست رایگان', '💰 افزایش موجودی'],
+        ['👤 حساب من', '🆘 پشتیبانی']
       ]).resize()
     });
+    
   }
 
   async handleBuyService(ctx: Context) {
