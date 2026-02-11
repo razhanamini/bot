@@ -100,7 +100,7 @@ export class BotService {
 
 if (isNewUser) {
   await ctx.replyWithPhoto(
-    { source: './assets/welcome.jpg' },
+    { source: './assets/welcome.png' },
     {
       caption:
 `💎 *V2Chain* 💎
