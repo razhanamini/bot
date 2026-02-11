@@ -47,6 +47,8 @@ export class BotService {
     this.bot.command('my_account', (ctx) => this.handleMyAccount(ctx));
     this.bot.command('support', (ctx) => this.handleSupport(ctx));
     this.bot.command('how_to_use', (ctx) => this.handleHowToUse(ctx));
+    this.bot.command('test_service', (ctx) => this.handleTestConfig(ctx));
+
   }
 
   private setupCallbacks() {
@@ -123,37 +125,7 @@ export class BotService {
     });
   }
 
-  // async handleConfirmPurchase(ctx: any) {
-  //   const serviceId = parseInt(ctx.match[1]);
-  //   const service = await db.getServiceById(serviceId);
-  //   const user = await db.getUserByTelegramId(ctx.from.id);
 
-  //   if (Number(user.balance) < service.price) {
-  //     await ctx.answerCbQuery(BotMessages.callbackAnswers.insufficientFunds);
-  //     await ctx.editMessageText(
-  //       BotMessages.insufficientFunds(user.balance, service.price),
-  //       { parse_mode: 'MarkdownV2' }
-  //     );
-  //     return;
-  //   }
-
-  //   // Generate dummy V2Ray link
-  //   // const vlessLink = `vless://${Math.random().toString(36).substring(2)}@server.example.com:443?security=tls&sni=v2ray.com&type=ws&path=/v2ray#${service.name}`;
-  //  // call the create config service to create a config for the user and retrieve a link
-  //  const vlessLink = "vlesslnk"; 
-  //   // Deduct balance
-  //   await db.updateUserBalance(user.id, -service.price);
-    
-  //   // Create config
-  //   await db.createUserConfig(user.id, service.id, vlessLink, 'active', service.duration_days);
-
-  //   await ctx.answerCbQuery(BotMessages.callbackAnswers.purchaseSuccessful);
-    
-  //   await ctx.editMessageText(
-  //     BotMessages.purchaseSuccessful(service, vlessLink),
-  //     { parse_mode: 'MarkdownV2' }
-  //   );
-  // }
 
   async handleCancelPurchase(ctx: any) {
     await ctx.answerCbQuery(BotMessages.callbackAnswers.purchaseCancelled);
@@ -175,26 +147,71 @@ async handleMyServices(ctx: Context) {
   await ctx.reply(message, { parse_mode: 'MarkdownV2' });
 }
 
-  // async handleTestConfig(ctx: Context) {
-  //   const user = await db.getUserByTelegramId(ctx.from!.id);
-    
-  //   const hasTest = await db.hasTestConfig(user.id);
-  //   if (hasTest) {
-  //     await ctx.reply(BotMessages.alreadyUsedTest(), { parse_mode: 'MarkdownV2' });
-  //     return;
-  //   }
+async handleTestConfig(ctx: Context) {
+  const user = await db.getUserByTelegramId(ctx.from!.id);
+  
+  // Check if user already used test config
+  const hasTest = await db.hasTestConfig(user.id);
+  if (hasTest) {
+    await ctx.reply(BotMessages.alreadyUsedTest(), { parse_mode: 'MarkdownV2' });
+    return;
+  }
 
-  //   // Generate dummy test config
-  //   const vlessLink = `vless://${Math.random().toString(36).substring(2)}@test.server.example.com:443?security=tls&sni=test.v2ray.com&type=ws&path=/test#Free-Test`;
-    
-  //   // Create test config (3 days free)
-  //   await db.createUserConfig(user.id, 0, vlessLink, 'test', 3);
+  try {
+    await ctx.reply('🔄 Setting up your free test service...', { parse_mode: 'MarkdownV2' });
 
-  //   await ctx.reply(
-  //     BotMessages.testConfigActivated(vlessLink),
-  //     { parse_mode: 'MarkdownV2' }
-  //   );
-  // }
+    // Create test service parameters
+    const params = {
+      userId: user.id,
+      userEmail: `${user.telegram_id}@test.v2ray`, // Special email suffix for test
+      serviceId: 1111, // 1111 for test services
+      serviceName: 'Free Test',
+      durationDays: 1, // 24 hours
+      dataLimitGB: 0.2 // 1GB limit (Xray supports this)
+    };
+
+    // Create test service using V2Ray service
+    const result = await v2rayServices.createService(params);
+
+    if (!result.success || !result.links) {
+      throw new Error(result.message || 'Failed to create test service');
+    }
+
+    // Update the status to 'test' instead of 'active'
+    await db.query(
+      `UPDATE user_configs 
+       SET status = 'test', 
+           data_limit_gb = 0.2,
+           updated_at = NOW() 
+       WHERE client_email = $1 AND status = 'active'`,
+      [params.userEmail]
+    );
+
+    // Send success message with all platform links
+    await ctx.reply(
+      BotMessages.testConfigActivated(),
+      { parse_mode: 'MarkdownV2' }
+    );
+
+    // Also send each platform link separately for easier copying
+    const platforms = ['Android', 'iOS', 'Windows', 'Linux', 'macOS'];
+    for (const platform of platforms) {
+      await ctx.reply(
+        BotMessages.getPlatformLinkMessage(result.links, platform),
+        { parse_mode: 'MarkdownV2' }
+      );
+    }
+
+    console.log(`✅ Test service created for user ${user.id} (${user.telegram_id})`);
+
+  } catch (error: any) {
+    console.error('❌ Error creating test service:', error);
+    await ctx.reply(
+      `❌ Failed to create test service: ${error.message}\n\nPlease try again later or contact support.`,
+      { parse_mode: 'MarkdownV2' }
+    );
+  }
+}
 
 async handleConfirmPurchase(ctx: any) {
   const serviceId = parseInt(ctx.match[1]);

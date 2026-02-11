@@ -113,13 +113,11 @@ Use /buy to purchase a config or /test\\_config for a free test\\.`;
   }
 
   // Test config activated
-  static testConfigActivated(vlessLink: string): string {
+  static testConfigActivated(): string {
     return `🎉 *Free Test Config Activated\\!*
 
-This test config will expire in 3 days\\.
+This test config will expire in 1 days\\.
 
-*Your V2Ray Config:*
-\`${vlessLink}\`
 
 💡 Use /buy to purchase a full config\\.`;
   }
@@ -450,6 +448,7 @@ static paymentVerificationRequired(payment: any, user: any): string {
     
     return message;
   }
+
 
 
 }

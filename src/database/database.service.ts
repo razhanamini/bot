@@ -118,16 +118,6 @@ class DatabaseService {
     return result.rows[0];
   }
 
-  async hasTestConfig(userId: number) {
-    const result = await this.query(
-      `SELECT COUNT(*) as count 
-       FROM user_configs 
-       WHERE user_id = $1 AND status = 'test'`,
-      [userId]
-    );
-    return parseInt(result.rows[0].count) > 0;
-  }
-
   async getPaymentById(paymentId: number) {
     const result = await this.query(
       'SELECT p.*, u.telegram_id, u.username FROM payments p JOIN users u ON p.user_id = u.id WHERE p.id = $1',
@@ -261,6 +251,41 @@ async getServerStats(): Promise<any> {
     return result.rows[0];
 }
 
+
+
+async hasTestConfig(userId: number): Promise<boolean> {
+  const result = await this.query(
+    `SELECT COUNT(*) as count 
+     FROM user_configs 
+     WHERE user_id = $1 AND status = 'test'`,
+    [userId]
+  );
+  return parseInt(result.rows[0].count) > 0;
+}
+
+// Override createUserConfig to handle test services
+async createTestUserConfig(
+  userId: number, 
+  vlessLink: string, 
+  serverId: number,
+  clientEmail: string,
+  inboundTag: string
+): Promise<any> {
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + 1); // 24 hours
+  
+  const result = await this.query(
+    `INSERT INTO user_configs (
+      user_id, service_id, server_id, vless_link, status, expires_at,
+      data_used_gb, client_email, inbound_tag, data_limit_gb,
+      port, protocol, security, network
+    ) VALUES ($1, NULL, $2, $3, 'test', $4, 0, $5, $6, 1, 8445, 'vless', 'reality', 'tcp')
+    RETURNING *`,
+    [userId, serverId, vlessLink, expiresAt, clientEmail, inboundTag]
+  );
+  
+  return result.rows[0];
+}
 
 
 }
