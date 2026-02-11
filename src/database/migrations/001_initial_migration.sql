@@ -205,7 +205,7 @@ CREATE TABLE user_configs (
     -- Constraints
     CONSTRAINT check_status CHECK (status IN ('active', 'test', 'suspended', 'expired', 'cancelled')),
     CONSTRAINT check_data_used_positive CHECK (data_used_gb >= 0),
-    CONSTRAINT check_expires_at_future CHECK (expires_at > created_at),
+    CONSTRAINT check_expires_at_future CHECK (expires_at > created_at)
     
     -- Prevent duplicate active services for same user+email+server
     -- CONSTRAINT unique_active_user_service UNIQUE (user_id, client_email, server_id, status) 
