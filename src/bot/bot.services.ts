@@ -217,7 +217,7 @@ async handleTestConfig(ctx: Context) {
   } catch (error: any) {
     console.error('❌ Error creating test service:', error);
     await ctx.reply(
-      `❌ Failed to create test service: \n\nPlease try again later or contact support.`,
+      `❌ Failed to create test service: \n\nPlease try again later or contact support`,
       { parse_mode: 'MarkdownV2' }
     );
   }
