@@ -194,7 +194,6 @@ CREATE TABLE user_configs (
     data_limit_gb DECIMAL(10, 2),
     
     -- Additional config info
-    uuid VARCHAR(36) NOT NULL,
     port INTEGER,
     protocol VARCHAR(50) DEFAULT 'vless',
     security VARCHAR(50) DEFAULT 'reality',
