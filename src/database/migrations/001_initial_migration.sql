@@ -218,7 +218,6 @@ CREATE INDEX idx_user_configs_service_id ON user_configs(service_id);
 CREATE INDEX idx_user_configs_status ON user_configs(status);
 CREATE INDEX idx_user_configs_expires_at ON user_configs(expires_at);
 CREATE INDEX idx_user_configs_client_email ON user_configs(client_email);
-CREATE INDEX idx_user_configs_uuid ON user_configs(uuid);
 CREATE INDEX idx_user_configs_created_at ON user_configs(created_at);
 CREATE INDEX idx_user_configs_composite ON user_configs(user_id, status, expires_at);
 
