@@ -168,7 +168,7 @@ async handleTestConfig(ctx: Context) {
   }
 
   try {
-    await ctx.reply('🔄 Setting up your free test service...', { parse_mode: 'MarkdownV2' });
+    await ctx.reply('🔄 Setting up your free test service  ', { parse_mode: 'MarkdownV2' });
 
     // Create test service parameters
     const params = {
@@ -217,7 +217,7 @@ async handleTestConfig(ctx: Context) {
   } catch (error: any) {
     console.error('❌ Error creating test service:', error);
     await ctx.reply(
-      `❌ Failed to create test service: ${error.message}\n\nPlease try again later or contact support.`,
+      `❌ Failed to create test service: \n\nPlease try again later or contact support.`,
       { parse_mode: 'MarkdownV2' }
     );
   }
