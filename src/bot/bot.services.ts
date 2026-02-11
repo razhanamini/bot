@@ -5,9 +5,20 @@ import { BotMessages } from './messages';
 import v2rayServices from '../services/v2ray.services';
 dotenv.config();
 
+
+const PERSIAN_BUTTONS = {
+  BUY: '🛒 خرید',
+  MY_SERVICES: '📋 سرویس‌های من',
+  TEST_CONFIG: '🎁 تست رایگان',
+  ADD_FUNDS: '💰 افزایش موجودی',
+  MY_ACCOUNT: '👤 حساب من',
+  SUPPORT: '🆘 پشتیبانی'
+} as const;
+
 export class BotService {
 
 
+  
 
 
   private bot: Telegraf;
@@ -69,13 +80,15 @@ export class BotService {
     this.bot.command('test_config', (ctx) => this.handleTestConfig(ctx)); // ✅ Fixed: changed from 'test_service' to 'test_config'
   
   
-      this.bot.hears('خرید', (ctx) => this.handleBuyService(ctx));
-  this.bot.hears('سرویس‌های من', (ctx) => this.handleMyServices(ctx));
-  this.bot.hears('تست رایگان', (ctx) => this.handleTestConfig(ctx));
-  this.bot.hears('افزایش موجودی', (ctx) => this.handleAddFunds(ctx));
-  this.bot.hears('حساب من', (ctx) => this.handleMyAccount(ctx));
-  this.bot.hears('پشتیبانی', (ctx) => this.handleSupport(ctx));
-  
+  // Map Persian text to handlers
+  this.bot.hears(PERSIAN_BUTTONS.BUY, (ctx) => this.handleBuyService(ctx));
+  this.bot.hears(PERSIAN_BUTTONS.MY_SERVICES, (ctx) => this.handleMyServices(ctx));
+  this.bot.hears(PERSIAN_BUTTONS.TEST_CONFIG, (ctx) => this.handleTestConfig(ctx));
+  this.bot.hears(PERSIAN_BUTTONS.ADD_FUNDS, (ctx) => this.handleAddFunds(ctx));
+  this.bot.hears(PERSIAN_BUTTONS.MY_ACCOUNT, (ctx) => this.handleMyAccount(ctx));
+  this.bot.hears(PERSIAN_BUTTONS.SUPPORT, (ctx) => this.handleSupport(ctx));
+
+
   }
 
   
@@ -123,9 +136,9 @@ export class BotService {
     await ctx.reply(message, {
       parse_mode: 'MarkdownV2',
       ...Markup.keyboard([
-        ['🛒 خرید', '📋 سرویس‌های من'],
-        ['🎁 تست رایگان', '💰 افزایش موجودی'],
-        ['👤 حساب من', '🆘 پشتیبانی']
+        [PERSIAN_BUTTONS.BUY, PERSIAN_BUTTONS.MY_SERVICES],
+      [PERSIAN_BUTTONS.TEST_CONFIG, PERSIAN_BUTTONS.ADD_FUNDS],
+      [PERSIAN_BUTTONS.MY_ACCOUNT, PERSIAN_BUTTONS.SUPPORT]
       ]).resize()
     });
     
