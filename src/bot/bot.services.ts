@@ -98,22 +98,26 @@ export class BotService {
 
 
 
-    if (isNewUser) {
-      // Send welcome image from URL
-     await ctx.replyWithPhoto(
-      { source: './assets/welcome.jpg' }, // Local file
-      {
-        caption: `    💎V2chain 💎   n\n` +
-                 `سرویس تست رايگان  \n\n` +
-                `تضمین کمترین پینگ \n` +
-                 `مناسب برای دانلود و آپلود \n` +
-                 `پشتیبانی ۲۴ ساعته \n` +
-                 `سرور های اختصاصی \n\n`,
-        parse_mode: 'MarkdownV2'
-      }
-    );
-    
-    } 
+if (isNewUser) {
+  await ctx.replyWithPhoto(
+    { source: './assets/welcome.jpg' },
+    {
+      caption:
+`💎 *V2Chain* 💎
+
+🎁 *سرویس تست رایگان*
+
+🔥 تضمین کمترین پینگ  
+⚡️ مناسب برای دانلود و آپلود  
+🕓 پشتیبانی ۲۴ ساعته  
+🖥 سرورهای اختصاصی
+
+🚀 همین حالا شروع کنید`,
+      parse_mode: 'MarkdownV2'
+    }
+  );
+}
+
 
     await ctx.reply(message, {
       parse_mode: 'MarkdownV2',
