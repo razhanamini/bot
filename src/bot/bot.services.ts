@@ -7,7 +7,7 @@ dotenv.config();
 
 export class BotService {
 
-  
+
 
 
   private bot: Telegraf;
@@ -29,7 +29,7 @@ export class BotService {
     v2rayServices.setBotService(this);
   }
 
-    private escapeMarkdown(text: string): string {
+  private escapeMarkdown(text: string): string {
     return text.replace(/[_*[\]()~`>#+\-=|{}.!]/g, '\\$&');
   }
 
@@ -88,22 +88,12 @@ export class BotService {
 
 
     const isNewUser = user.created_at.getTime() > Date.now() - 5000;
-
-
-
-
-
- 
-
-
-
-
-if (isNewUser) {
-  await ctx.replyWithPhoto(
-    { source: './assets/welcome.png' },
-    {
-      caption:
-`💎 *V2Chain* 💎
+    if (isNewUser) {
+      await ctx.replyWithPhoto(
+        { source: './assets/welcome.png' },
+        {
+          caption:
+            `💎 *V2Chain* 💎
 
 🎁 *سرویس تست رایگان*
 
@@ -113,20 +103,21 @@ if (isNewUser) {
 🖥 سرورهای اختصاصی
 
 🚀 همین حالا شروع کنید`,
-      parse_mode: 'MarkdownV2'
+          parse_mode: 'MarkdownV2'
+        }
+      );
     }
-  );
-}
 
 
-    await ctx.reply(message, {
-      parse_mode: 'MarkdownV2',
-      ...Markup.keyboard([
-        ['/buy', '/my_services'],
-        ['/test_config', '/add_funds'],
-        ['/my_account', '/support']
-      ]).resize()
-    });
+await ctx.replyWithPhoto(message, {
+  parse_mode: 'MarkdownV2',
+  ...Markup.keyboard([
+    ['/buy 🛒 خرید', '/my_services 📋 سرویس‌های من'],
+    ['/test_config 🎁 تست رایگان', '/add_funds 💰 افزایش موجودی'],
+    ['/my_account 👤 حساب من', '/support 🆘 پشتیبانی']
+  ]).resize()
+});
+
   }
 
   async handleBuyService(ctx: Context) {

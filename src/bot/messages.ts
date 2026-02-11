@@ -15,21 +15,7 @@ export class BotMessages {
     const balance = Math.floor(user.balance);
     const username = user.username ? `${this.escapeMarkdown(user.username)}` : 'N/A';
     
-    return `🎉 *Welcome to V2Ray Config Bot*
-
-👤 *User Information:*
-*ID:* ${user.id}
-*Username:* ${username}
-*Balance:* \\$${balance}
-
-*Available Commands:*
-/buy  \\- Purchase V2Ray config
-/my_services  \\- View your active configs
-/test_config  \\- Get free test config
-/add_funds  \\- Add funds to your account
-/my_account  \\- View account details
-/support  \\- Contact support
-/how_to_use  \\- Tutorials and guides`;
+    return `🎁 *قبل از خرید کانفیگ، اکانت تست رایگان دریافت کنید*`;
   }
 
   // No services available
