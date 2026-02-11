@@ -60,8 +60,8 @@ export class BotService {
   // }
   private setupCommands() {
     this.bot.command('start', (ctx) => this.handleStart(ctx));
-    this.bot.command('buy', (ctx) => this.handleBuyService(ctx));
-    this.bot.command('my_services', (ctx) => this.handleMyServices(ctx));
+    this.bot.command('خرید', (ctx) => this.handleBuyService(ctx));
+    this.bot.command('سرویس‌های من', (ctx) => this.handleMyServices(ctx));
     this.bot.command('add_funds', (ctx) => this.handleAddFunds(ctx));
     this.bot.command('my_account', (ctx) => this.handleMyAccount(ctx));
     this.bot.command('support', (ctx) => this.handleSupport(ctx));
