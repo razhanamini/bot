@@ -157,3 +157,59 @@ export interface ServiceMonitorResult {
 }
 
 
+
+
+// ... existing types ...
+
+export interface Server {
+    id: number;
+    name: string;
+    domain: string;
+    ip: string;
+    api_port: number;
+    xray_port: number;
+    api_token: string;
+    max_users: number;
+    current_users: number;
+    status: 'active' | 'maintenance' | 'offline';
+    location: string;
+    created_at: Date;
+    updated_at: Date;
+    last_checked_at?: Date;
+    is_active: boolean;
+}
+
+export interface VlessLinkParams {
+    uuid: string;
+    serverHost: string;
+    serverPort: number;
+    email: string;
+    security: string;
+    sni: string;
+    publicKey: string;
+    shortId: string;
+    networkType: string;
+    flow?: string;
+    encryption?: string;
+}
+
+export interface VlessLinkSet {
+    standard: string;
+    android: string;
+    ios: string;
+    linux: string;
+    windows: string;
+    macos: string;
+    qrCodeAndroid?: string;
+    qrCodeIos?: string;
+    qrCodeWindows?: string;
+}
+
+export interface ServiceCreateParams {
+    userId: number;
+    userEmail: string;
+    serviceId: number;
+    serviceName: string;
+    durationDays: number;
+    dataLimitGB?: number;
+}

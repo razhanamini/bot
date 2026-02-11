@@ -1,5 +1,7 @@
 import { Pool } from 'pg';
 import dotenv from 'dotenv';
+import { Server } from '../types/v2ray.type'
+// import { Server } from 'http';
 
 dotenv.config();
 
@@ -167,6 +169,99 @@ class DatabaseService {
   
   return result.rows;
 }
+
+
+
+
+// ================ SERVER METHODS ================
+
+async getAvailableServers(): Promise<Server[]> {
+    const result = await this.query(
+        `SELECT * FROM servers 
+         WHERE status = 'active' 
+         AND is_active = true 
+         AND current_users < max_users
+         ORDER BY current_users ASC, id ASC`,
+        []
+    );
+    return result.rows;
+}
+
+async getAllActiveServers(): Promise<Server[]> {
+    const result = await this.query(
+        `SELECT * FROM servers 
+         WHERE status = 'active' 
+         AND is_active = true
+         ORDER BY id ASC`,
+        []
+    );
+    return result.rows;
+}
+
+async getServerById(id: number): Promise<Server | null> {
+    const result = await this.query(
+        'SELECT * FROM servers WHERE id = $1',
+        [id]
+    );
+    return result.rows[0] || null;
+}
+
+async incrementServerUsers(serverId: number): Promise<void> {
+    await this.query(
+        `UPDATE servers 
+         SET current_users = current_users + 1,
+             updated_at = NOW()
+         WHERE id = $1`,
+        [serverId]
+    );
+}
+
+async decrementServerUsers(serverId: number): Promise<void> {
+    await this.query(
+        `UPDATE servers 
+         SET current_users = GREATEST(current_users - 1, 0),
+             updated_at = NOW()
+         WHERE id = $1`,
+        [serverId]
+    );
+}
+
+async updateServerCurrentUsers(serverId: number, count: number): Promise<void> {
+    await this.query(
+        `UPDATE servers 
+         SET current_users = $1,
+             updated_at = NOW(),
+             last_checked_at = NOW()
+         WHERE id = $2`,
+        [count, serverId]
+    );
+}
+
+async updateServerStatus(serverId: number, status: string): Promise<void> {
+    await this.query(
+        `UPDATE servers 
+         SET status = $1,
+             updated_at = NOW()
+         WHERE id = $2`,
+        [status, serverId]
+    );
+}
+
+async getServerStats(): Promise<any> {
+    const result = await this.query(
+        `SELECT 
+            COUNT(*) as total_servers,
+            SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_servers,
+            SUM(current_users) as total_users,
+            SUM(max_users) as total_capacity
+         FROM servers 
+         WHERE is_active = true`,
+        []
+    );
+    return result.rows[0];
+}
+
+
 
 }
 
