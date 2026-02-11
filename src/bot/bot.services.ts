@@ -154,7 +154,7 @@ export class BotService {
 
     const serviceButtons = services.map(service =>
       [Markup.button.callback(
-        `${service.name} - $${service.price} (${service.duration_days} days)`,
+        `${service.description} - تومان${Math.floor(service.price)} ${service.duration_days} روزه`,
         `service_${service.id}`
       )]
     );
