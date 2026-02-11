@@ -234,7 +234,7 @@ export class V2RayService {
         email: params.userEmail,
         flow: '',
         limitIp: 0,
-        totalGB: params.dataLimitGB,
+        totalGB: params.dataLimitGB?.toString(),
         expireTime: expireTime,
         createdAt: createdAt
       };

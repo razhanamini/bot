@@ -65,7 +65,7 @@ export interface Client {
   email: string;
   flow?: string;
   limitIp?: number;
-  totalGB?: number;
+  totalGB?: number | string;
   expireTime?: number;
   createdAt?: string;
 }
@@ -141,7 +141,7 @@ export interface ServiceCreateParams {
   serviceId: number;
   serviceName: string;
   durationDays: number;
-  dataLimitGB?: number;
+  dataLimitGB?: number | string;
   port?: number;
 }
 
@@ -205,11 +205,3 @@ export interface VlessLinkSet {
     qrCodeWindows?: string;
 }
 
-export interface ServiceCreateParams {
-    userId: number;
-    userEmail: string;
-    serviceId: number;
-    serviceName: string;
-    durationDays: number;
-    dataLimitGB?: number;
-}
