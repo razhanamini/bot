@@ -299,14 +299,24 @@ ORDER BY total_sales DESC;
 -- =====================================================
 
 -- Insert sample services
-INSERT INTO services (name, description, price, duration_days, data_limit_gb, is_active, sort_order) VALUES
-('Basic Plan', '1 month V2Ray config with 100GB data', 10, 30, 100, true, 1),
-('Standard Plan', '3 months V2Ray config with 300GB data', 20, 90, 300, true, 2),
-('Premium Plan', '6 months V2Ray config with 1TB data', 30, 180, 1024, true, 3),
-('Unlimited Plan', '1 year unlimited V2Ray config', 70, 365, NULL, true, 4),
-('Test Plan', '1 day V2Ray config with 1GB data', 1, 1, 1, true, 5),
-(999, 'Free Test', '24 hour test service with 200MB data', 0, 1, 0.2, true, 0);
+-- INSERT INTO services (name, description, price, duration_days, data_limit_gb, is_active, sort_order) VALUES
+-- ('Basic Plan', '1 month V2Ray config with 100GB data', 10, 30, 100, true, 1),
+-- ('Standard Plan', '3 months V2Ray config with 300GB data', 20, 90, 300, true, 2),
+-- ('Premium Plan', '6 months V2Ray config with 1TB data', 30, 180, 1024, true, 3),
+-- ('Unlimited Plan', '1 year unlimited V2Ray config', 70, 365, NULL, true, 4),
+-- ('Test Plan', '1 day V2Ray config with 1GB data', 1, 1, 1, true, 5),
+-- (999, 'Free Test', '24 hour test service with 200MB data', 0, 1, 0.2, true, 0);
+
+INSERT INTO services (id, name, description, price, duration_days, data_limit_gb, is_active, sort_order) VALUES
+(1, 'Basic Plan', '1 month V2Ray config with 100GB data', 10, 30, 100, true, 1),
+(2, 'Standard Plan', '3 months V2Ray config with 300GB data', 20, 90, 300, true, 2),
+(3, 'Premium Plan', '6 months V2Ray config with 1TB data', 30, 180, 1024, true, 3),
+(4, 'Unlimited Plan', '1 year unlimited V2Ray config', 70, 365, NULL, true, 4),
+(5, 'Test Plan', '1 day V2Ray config with 1GB data', 1, 1, 1, true, 5),
+(1111, 'Free Test', '24 hour test service with 200MB data', 0, 1, 0.2, true, 0);
+
 -- Insert initial servers (update tokens before running)
+
 INSERT INTO servers (
     name, domain, ip, api_port, api_token, max_users, 
     current_users, location, status, cpu_cores, ram_gb, xray_port
