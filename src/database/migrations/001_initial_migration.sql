@@ -315,14 +315,13 @@ ORDER BY total_sales DESC;
 -- (5, 'Test Plan', '1 day V2Ray config with 1GB data', 1, 1, 1, true, 5),
 -- (1111, 'Free Test', '24 hour test service with 200MB data', 0, 1, 0.2, true, 0);
 INSERT INTO services (id, name, description, price, duration_days, data_limit_gb, is_active, sort_order) VALUES
-(1, 'پلن پایه', ' چند کاربره یک ماهه  25 گیگابایت ', 10, 30, 100, true, 1),
-(2, 'پلن استاندارد', 'چند کاربره  یک ماهه 50 گیگابایت ', 20, 90, 300, true, 2),
-(3, 'پلن پریمیوم', 'چند کاربره  یک ماهه  150 گیگابایت ', 30, 180, 1024, true, 3),
-(4, 'پلن نامحدود', ' چند کاربره یک ماهه  200 گیگابایت ', 70, 365, NULL, true, 4),
+(1, 'پلن پایه', ' چند کاربره یک ماهه  25 گیگابایت ', 170000, 30, 25, true, 1),
+(2, 'پلن استاندارد', 'چند کاربره  یک ماهه 50 گیگابایت ', 230000, 30, 50, true, 2),
+(3, 'پلن پریمیوم', 'چند کاربره  یک ماهه  150 گیگابایت ', 300000, 30, 100, true, 3),
+(4, 'پلن نامحدود', ' چند کاربره یک ماهه  200 گیگابایت ', 365000, 30, 150, true, 4),
 (1111, 'تست رایگان', 'سرویس تست 24 ساعته  200 مگابایت ', 0, 1, 0.2, true, 0);
 
 -- Insert initial servers (update tokens before running)
-چند کاربره
 
 INSERT INTO servers (
     name, domain, ip, api_port, api_token, max_users, 
