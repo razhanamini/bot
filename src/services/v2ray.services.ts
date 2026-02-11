@@ -551,13 +551,14 @@ export class V2RayService {
         ['suspended', service.id]
       );
       
-      await this.notifyUser(
-        service.telegram_id,
-        `⚠️ *Data Limit Reached*\n\n` +
-        `Your V2Ray service on server ${service.server_name || 'Unknown'} has reached its data limit\n` +
-        `📊 *Usage:* ${Math.floor(service.data_used_gb)} GB / ${Math.floor(service.data_limit_gb)} GB\n` +
-        `\nService has been suspended.`
-      );
+   await this.notifyUser(
+  service.telegram_id,
+  `⚠️ *محدودیت داده به پایان رسید*\n\n` +
+  `سرویس V2Ray شما در سرور ${service.server_name} به حد مجاز مصرف داده رسید\n` +
+  `📊 *استفاده:* ${Math.floor(service.data_used_gb)} GB / ${Math.floor(service.data_limit_gb)} GB\n\n` +
+  `⏸️ سرویس شما به حالت تعلیق درآمده است.`
+);
+
     } catch (error: any) {
       console.error('Error handling data limit reached:', error.message);
     }
@@ -572,12 +573,13 @@ export class V2RayService {
         ['expired', service.id]
       );
       
-      await this.notifyUser(
-        service.telegram_id,
-        `⏰ *Service Expired*\n\n` +
-        `Your V2Ray service on server ${service.server_name || 'Unknown'} has expired\n` +
-        `\nService has been deactivated`
-      );
+await this.notifyUser(
+  service.telegram_id,
+  `⏰ *سرویس منقضی شد*\n\n` +
+  `سرویس V2Ray شما در سرور ${service.server_name} منقضی شده است\n\n` +
+  `❌ سرویس شما غیرفعال شده است`
+);
+
     } catch (error: any) {
       console.error('Error handling service expiry:', error.message);
     }
