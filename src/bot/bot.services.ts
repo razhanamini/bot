@@ -183,8 +183,8 @@ export class BotService {
       reply_markup: {
         inline_keyboard: [
           [
-            Markup.button.callback('✅ Confirm Purchase', `confirm_purchase_${service.id}`),
-            Markup.button.callback('❌ Cancel', 'cancel_purchase')
+            Markup.button.callback('✅ تایید پرداخت', `confirm_purchase_${service.id}`),
+            Markup.button.callback('❌ لغو', 'cancel_purchase')
           ]
         ]
       }
@@ -224,7 +224,7 @@ export class BotService {
     }
 
     try {
-      await ctx.reply('🔄 Setting up your free test service  ', { parse_mode: 'MarkdownV2' });
+      await ctx.reply('🔄 در حال ساخت سرویس تست شما  ', { parse_mode: 'MarkdownV2' });
 
       // Create test service parameters
       const params = {
@@ -273,7 +273,7 @@ export class BotService {
     } catch (error: any) {
       console.error('❌ Error creating test service:', error);
       await ctx.reply(
-        `❌ Failed to create test service: \n\nPlease try again later or contact support`,
+        `❌ خطا در ساخت سرویس \n\nلطفا با پشتیبانی در تماس باشید`,
         { parse_mode: 'MarkdownV2' }
       );
     }
@@ -343,7 +343,7 @@ export class BotService {
       console.error('Error creating service:', error);
       await ctx.answerCbQuery('❌ Service creation failed');
       await ctx.editMessageText(
-        `❌ Service creation failed: \n\nPlease contact support.`,
+        `❌ خطا در ساخت سرویس: \n\nلطفا با پشتیبانی در تماس باشید`,
         { parse_mode: 'MarkdownV2' }
       );
     }
@@ -371,18 +371,18 @@ export class BotService {
     if (!isNaN(parseFloat(text)) && parseFloat(text) > 0) {
       const amount = parseFloat(text);
       const cardNumber = process.env.PAYMENT_CARD_NUMBER || '1234-5678-9012-3456';
-
+      const cardOwner = process.env.CARD_OWNER || "alex";
       const payment = await db.createPayment(user.id, amount, cardNumber);
 
-      const message = BotMessages.paymentInvoice(payment, amount);
+      const message = BotMessages.paymentInvoice(payment, amount, cardOwner);
 
       await ctx.reply(message, {
         parse_mode: 'MarkdownV2',
         reply_markup: {
           inline_keyboard: [
             [
-              Markup.button.callback('✅ I\'ve Paid', `payed_${payment.id}`),
-              Markup.button.callback('❌ Cancel Payment', `cancel_payment_${payment.id}`)
+              Markup.button.callback('✅ پرداخت کردم ', `payed_${payment.id}`),
+              Markup.button.callback('❌ لغو پرداخت', `cancel_payment_${payment.id}`)
             ]
           ]
         }
@@ -435,8 +435,8 @@ export class BotService {
             reply_markup: {
               inline_keyboard: [
                 [
-                  Markup.button.callback('✅ Confirm Payment', `confirm_payment_${payment.id}`),
-                  Markup.button.callback('❌ Decline Payment', `decline_payment_${payment.id}`)
+                  Markup.button.callback('✅ تایید پرداخت', `confirm_payment_${payment.id}`),
+                  Markup.button.callback('❌ لغو پرداخت', `decline_payment_${payment.id}`)
                 ]
               ]
             }

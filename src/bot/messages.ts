@@ -20,7 +20,7 @@ export class BotMessages {
 
   // No services available
   static noServicesAvailable(): string {
-    return `⚠️ No services available at the moment\\.`;
+    return `⚠️ در حال حاضر سرویسی موجود نیست\\.`;
   }
 
   // Available services list
@@ -32,25 +32,28 @@ export class BotMessages {
   static serviceDetails(service: Service): string {
     const dataLimit = Math.floor(service.data_limit_gb); 
        `${service.data_limit_gb} GB`    
-    return `📦 *Service Details:*
-*Name:* ${this.escapeMarkdown(service.name)}
-*Price:* \\$${Math.floor(service.price)}
-*Duration:* ${service.duration_days} days
-*Data Limit:* ${dataLimit}
-*Description:* ${this.escapeMarkdown(service.description)}
+    return `📦 *جزئیات سرویس:*
 
-*Proceed with purchase\\?*`;
+*نام سرویس:* ${this.escapeMarkdown(service.name)}
+*قیمت:* \\$${Math.floor(service.price)}
+*مدت اعتبار:* ${service.duration_days} روز
+*حجم ترافیک:* ${dataLimit}
+*توضیحات:* ${this.escapeMarkdown(service.description)}
+
+🛒 *آیا مایل به ادامه خرید هستید؟*`;
+
   }
 
   // Insufficient funds
   static insufficientFunds(userBalance: number, servicePrice: number): string {
     const balance = Math.floor(userBalance);
-    return `⚠️ *Insufficient balance\\!*
+    return `⚠️ *موجودی شما کافی نیست\\!*
 
-*Your balance:* \\$${balance}
-*Required:* \\$${Math.floor(servicePrice)}
+💰 *موجودی فعلی:* \\$${balance}
+💳 *مبلغ مورد نیاز:* \\$${Math.floor(servicePrice)}
 
-Use /add\\_funds to add funds\\.`;
+برای افزایش موجودی از دستور /add_funds استفاده کنید\\.`;
+
   }
 
   // Purchase successful
@@ -68,124 +71,139 @@ Use /add\\_funds to add funds\\.`;
 
   // No active configs
   static noActiveConfigs(): string {
-    return `📭 You have no active configs\\.  
-Use /buy to purchase a config or /test\\_config for a free test\\.`;
+    return `📭 *شما هیچ کانفیگ فعالی ندارید\\.*
+
+🛒 برای خرید سرویس از کیبورد زیر استفاده کنید  
+🎁 یا برای دریافت تست رایگان از کیبورد زیر استفاده کنید\\.`;
+
   }
 
   // User configs list
   static userConfigs(configs: UserConfig[]): string {
-    let message = `📋 *Your Active Configs:*\n\n`;
-    
-    
-    configs.forEach((config, index) => {
-      const expiresDate = new Date(config.expires_at).toLocaleDateString();
-      const remainingDays = Math.ceil((new Date(config.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-      const dataUsed = Math.floor(config.data_used_gb);
-      // const dataLimit = config.data_limit_gb ? ` / ${config.data_limit_gb} GB limit` : ' / Unlimited';
-      
-      message += `${index + 1}\\. *${config.service_id}*\n`;
-      message += `   *Status:* ${config.status}\n`;
-      message += `   *Expires:* ${expiresDate} \\(${remainingDays} days left\\)\n`;
-      message += `   *Data:* ${dataUsed} GB used\n`;
-      message += `   *Link:* \`${config.vless_link}\`\n\n`;
-    });
+let message = `📋 *سرویس‌های فعال شما:*\n\n`;
+
+configs.forEach((config, index) => {
+  const expiresDate = new Date(config.expires_at).toLocaleDateString();
+  const remainingDays = Math.ceil(
+    (new Date(config.expires_at).getTime() - Date.now()) /
+    (1000 * 60 * 60 * 24)
+  );
+  const dataUsed = Math.floor(config.data_used_gb);
+
+  message += `${index + 1}\\. *${config.service_id}*\n`;
+  message += `   🔹 *وضعیت:* ${config.status}\n`;
+  message += `   📅 *تاریخ انقضا:* ${expiresDate} \\(${remainingDays} روز باقی مانده\\)\n`;
+  message += `   📊 *میزان مصرف:* ${dataUsed} گیگابایت\n`;
+  message += `   🔗 *لینک اتصال:* \`${config.vless_link}\`\n\n`;
+});
+
 
     return message;
   }
 
   // Already used test config
   static alreadyUsedTest(): string {
-    return `⚠️ You have already used your free test config\\.`;
+return `⚠️ *شما قبلاً از اکانت تست رایگان خود استفاده کرده‌اید\\.*`;
   }
 
   // Test config activated
   static testConfigActivated(): string {
-    return `🎉 *Free Test Config Activated\\!*
+   return `🎉 *اکانت تست رایگان فعال شد\\!*
 
-This test config will expire in 1 days\\.
+⏳ این اکانت تست تا 24 ساعت دیگر منقضی می‌شود\\.
 
+💡 برای خرید سرویس کامل از کیبورد استفاده کنید\\.`;
 
-💡 Use /buy to purchase a full config\\.`;
   }
 
   // Add funds prompt
   static addFundsPrompt(): string {
-    return `💵 *How much would you like to add to your balance\\?*
+  return `💵 *چه مقدار می‌خواهید به موجودی خود اضافه کنید؟*
 
-Please enter the amount in USD \\(e\\.g\\., 10, 25, 50\\):`;
+لطفاً مبلغ را به تومان وارد کنید \\(برای مثال 50000\\)\\:`;
+
   }
 
   // Payment invoice
-static paymentInvoice(payment: any, amount: number): string {
-  const formattedAmount = amount;
+static paymentInvoice(payment: any, amount: number,cardOwner:string): string {
+  const formattedAmount = Math.floor(amount);
   
-  return `💰 *Payment Invoice* \\#${this.escapeMarkdown(payment.invoice_number)}
+  return `💰 *صورتحساب پرداخت* \\#${this.escapeMarkdown(payment.invoice_number)}
 
-*Amount:* \\$${formattedAmount}
-*Card Number:* ${this.escapeMarkdown(payment.card_number)}
-*Bank:* ${this.escapeMarkdown('1234 5678 9123 1233')}
-*Account Holder:* ${this.escapeMarkdown('Your Company Name')}
+💵 *مبلغ:* \\$${formattedAmount}
+💳 *شماره کارت:* ${this.escapeMarkdown(payment.card_number)}
+🏦 *بانک:* ${this.escapeMarkdown('نام بانک')}
+👤 *صاحب حساب:* ${cardOwner}}
 
-Please transfer exactly \\$${formattedAmount} to the card number above\\.  
-Then click "I\\'ve Paid" below and send the receipt photo\\.`;
+لطفاً دقیقاً مبلغ \\$${formattedAmount} را به شماره کارت بالا واریز کنید\\.  
+سپس روی گزینه «پرداخت کردم» کلیک کرده و تصویر رسید را ارسال نمایید\\.`;
+
 }
 
 
   // Payment made prompt
   static paymentMadePrompt(): string {
-    return `📸 *Please send the receipt photo as an image\\.*
+    return `📸 *لطفاً تصویر رسید پرداخت را به صورت عکس ارسال کنید\\.*
 
-Your payment will be processed once we verify the receipt\\.`;
+پس از بررسی و تأیید رسید، پرداخت شما پردازش خواهد شد\\.`;
+
   }
 
   // No pending payment
   static noPendingPayment(): string {
-    return `No pending payment found\\. Please start payment process with /add\\_funds`;
+return `❌ *هیچ پرداخت در حال انتظاری یافت نشد\\.*
+
+برای شروع فرآیند پرداخت از کیبورد استفاده کنید\\.`;
   }
 
   // Receipt received
   static receiptReceived(): string {
-    return `✅ *Receipt received\\!* Admins have been notified\\. Your payment will be processed shortly\\.  
+   return `✅ *رسید دریافت شد\\!*
+ادمین‌ها مطلع شده‌اند\\. پرداخت شما به زودی پردازش خواهد شد\\.
 
-You will receive a notification when it\\'s confirmed\\.`;
+📩 پس از تأیید، یک اعلان برای شما ارسال خواهد شد\\.`;
+
   }
 
   // Payment confirmed (user notification)
   static paymentConfirmedUser(amount: number ): string {
     const formattedAmount = Math.floor(amount);
-    return `✅ *Payment Confirmed\\!*
+return `✅ *پرداخت شما تأیید شد\\!*
 
-*Amount:* \\$${formattedAmount}
-*New Balance:* \\$${formattedAmount}
+💵 *مبلغ:* \\$${formattedAmount}
 
-Thank you for your payment\\!`;
+🙏 از  شما متشکریم\\!`;
+
   }
 
   // Payment confirmed (admin notification)
   static paymentConfirmedAdmin(payment: Payment): string {
     const username = payment.user_id ;
-    return `✅ *Payment* \\#${this.escapeMarkdown(payment.invoice_number)} *confirmed\\.*
-*User:* ${username}
-*Amount:* \\$${Math.floor(payment.amount)}
-*Status:* CONFIRMED`;
+   return `✅ *پرداخت* \\#${this.escapeMarkdown(payment.invoice_number)} *تأیید شد\\.*
+👤 *کاربر:* ${username}
+💵 *مبلغ:* \\$${Math.floor(payment.amount)}
+✅ *وضعیت:* تأیید شده`;
+
   }
 
   // Payment declined (user notification)
   static paymentDeclinedUser(payment: any): string {
-    return `❌ *Payment Declined*
+return `❌ *پرداخت ناموفق بود*
 
-Payment \\#${this.escapeMarkdown(payment.invoice_number)} has been declined\\.  
+فاکتور \\#${this.escapeMarkdown(payment.invoice_number)} رد شد\\.  
 
-Please contact support if you believe this is an error\\.`;
+اگر فکر می‌کنید این یک خطا است، لطفاً با پشتیبانی تماس بگیرید\\.`;  
+
   }
 
   // Payment declined (admin notification)
   static paymentDeclinedAdmin(payment: Payment): string {
     const username = payment.user_id;
-    return `❌ *Payment* \\#${this.escapeMarkdown(payment.invoice_number)} *declined\\.*
-*User:* ${username}
-*Amount:* \\$${Math.floor(payment.amount)}
-*Status:* DECLINED`;
+    return `❌ *پرداخت* \\#${this.escapeMarkdown(payment.invoice_number)} *رد شد\\.*
+👤 *کاربر:* ${username}
+💵 *مبلغ:* \\$${Math.floor(payment.amount)}
+❌ *وضعیت:* رد شده`;
+
   }
 
   // My account information
@@ -194,49 +212,43 @@ Please contact support if you believe this is an error\\.`;
     const username = user.username ? `${this.escapeMarkdown(user.username)}` : 'NOUSERNAME';
     const name = `${this.escapeMarkdown(user.first_name)} ${user.last_name ? this.escapeMarkdown(user.last_name) : ''}`.trim();
     const accountCreated = new Date(user.created_at).toLocaleDateString();
-    const status = user.is_active ? 'Active ✅' : 'Inactive ❌';
+    const status = user.is_active ? 'فعال ✅' : 'غیر فعال ❌';
     
-    return `👤 *Account Information:*
+   return `👤 *اطلاعات حساب کاربری:*
 
-*User ID:* ${user.id}
-*Telegram ID:* ${user.telegram_id}
-*Username:* ${username}
-*Name:* ${name}
-*Account Created:* ${this.escapeMarkdown(accountCreated)}
+👤 *نام کاربری:* ${username}
+📅 *تاریخ ایجاد حساب:* ${this.escapeMarkdown(accountCreated)}
 
-💰 *Balance:* \\$${balance}
-📡 *Active Configs:* ${configsCount}
-🔄 *Status:* ${status}
+💰 *موجودی:* \\$${balance}
+📡 *کانفیگ‌های فعال:* ${configsCount}
+🔄 *وضعیت:* ${status}
 
-💳 Use /add\\_funds to add balance
-📦 Use /buy to purchase configs`;
+`;
+
   }
 
   // Support message
   static supportMessage(telegramId: number): string {
-    return `🛠️ *Support*
+return `🛠️ *پشتیبانی*
 
-If you need assistance, please contact our support team directly via Telegram\\.
+اگر به کمک نیاز دارید، لطفاً مستقیماً با تیم پشتیبانی ما در ارتباط باشید\\.
 
-*Your User ID:* \`${telegramId}\`  
-Please include this ID when contacting support\\.
+🆔 *شناسه کاربری شما:* \`${telegramId}\`  
+لطفاً این شناسه را هنگام تماس با پشتیبانی ذکر کنید\\.
 
-*Support Contact:* v2raysupportid`;
+📞 *ایدی* @v2raysupportid`;
+
+
   }
 
   // How to use message
   static howToUse(channelLink: string): string {
-    return `📚 *How to Use*
+  return `📚 *راهنمای استفاده*
 
-For tutorials and guides on how to use V2Ray configs, please join our tutorial channel\\.
+برای آموزش‌ها و راهنمای استفاده از کانفیگ‌های V2Ray، لطفاً به کانال آموزشی ما بپیوندید\\.
 
-*Join here:* ${channelLink}
+*برای پیوستن اینجا کلیک کنید:* ${channelLink}`;
 
-*In the channel you\\'ll find:*
-• Setup guides for different platforms
-• Troubleshooting tips
-• Usage instructions
-• Latest updates`;
   }
 
   // Payment verification required (admin)
@@ -244,12 +256,13 @@ For tutorials and guides on how to use V2Ray configs, please join our tutorial c
 static paymentVerificationRequired(payment: any, user: any): string {
   const username = user.username ? this.escapeMarkdown(user.username) : 'N/A';
 
-  return `💰 *Payment Verification Required*
+  return `💰 *تأیید پرداخت *
 
-*Invoice:* \\#${this.escapeMarkdown(payment.invoice_number)}
-*User:* ${username} \\(ID: ${user.telegram_id}\\)
-*Amount:* \\$${Math.floor(payment.amount)}
-*Card:* ${this.escapeMarkdown(payment.card_number)}`;
+*فاکتور:* \\#${this.escapeMarkdown(payment.invoice_number)}
+*کاربر:* ${username} \\(ID: ${user.telegram_id}\\)
+*مبلغ:* \\$${Math.floor(payment.amount)}
+*شماره کارت:* ${this.escapeMarkdown(payment.card_number)}`;
+
 }
 
 
@@ -271,10 +284,11 @@ static paymentVerificationRequired(payment: any, user: any): string {
 
   static purchaseSuccessful(service: any, links: VlessLinkSet): string {
     return VlessLinkGenerator.formatForDisplay(links) + '\n\n' +
-      `🎉 *Purchase Successful\\!*\n\n` +
-      `*Service:* ${this.escapeMarkdown(service.name)}\n` +
-      `*Expires:* In ${service.duration_days} days\n\n` +
-      `📋 Use /my\\_services to view all your configs\\.`;
+       `🎉 *خرید با موفقیت انجام شد\\!*\n\n` +
+       `📦 *سرویس:* ${this.escapeMarkdown(service.name)}\n` +
+       `⏳ *انقضا:* در ${service.duration_days} روز\n\n` +
+       `📋 برای مشاهده همه کانفیگ‌های خود از سرویس های من استفاده کنید\\.`; 
+
   }
 
   // Get platform-specific link
@@ -310,8 +324,7 @@ static paymentVerificationRequired(payment: any, user: any): string {
     }
     
     return `🔗 *${platformName} Configuration:*\n\n` +
-      `\`${platformLink}\`\n\n` +
-      `Copy this link and import it into your V2Ray client\\.`;
+      `\`${platformLink}\`\n\n`;
   }
 
 
@@ -345,45 +358,45 @@ static paymentVerificationRequired(payment: any, user: any): string {
       return this.noActiveConfigs();
     }
 
-    let message = `📋 *Your Services Summary*\n\n`;
+   let message = `📋 *خلاصه سرویس‌های شما*\n\n`;
+
+// Count by status
+const activeCount = services.filter(s => s.status === 'active').length;
+const testCount = services.filter(s => s.status === 'test').length;
+const suspendedCount = services.filter(s => s.status === 'suspended').length;
+const expiredCount = services.filter(s => s.status === 'expired').length;
+
+const totalDataUsed = services.reduce((sum, s) => sum + parseFloat(s.data_used_gb || 0), 0);
+
+message += `✅ ${this.bold('فعال:')} ${activeCount}\n`;
+message += `🧪 ${this.bold('تست:')} ${testCount}\n`;
+message += `⏸️ ${this.bold('معلق:')} ${suspendedCount}\n`;
+message += `⏰ ${this.bold('منقضی شده:')} ${expiredCount}\n\n`;
+
+message += `💾 ${this.bold('کل مصرف دیتا:')} ${this.escapeMarkdown(totalDataUsed.toFixed(2))} GB\n\n`;
+
+// List active services only (for compact view)
+const activeServices = services.filter(s => s.status === 'active');
+if (activeServices.length > 0) {
+  message += `${this.bold('📡 سرویس‌های فعال:')}\n`;
+  activeServices.forEach((service, index) => {
+    const dataUsed = parseFloat(service.data_used_gb || 0).toFixed(2);
+    const dataLimit = service.data_limit_gb 
+      ? `${this.escapeMarkdown(service.data_limit_gb.toString())} GB` 
+      : 'نامحدود';
+    const remainingDays = Math.ceil(
+      (new Date(service.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+    );
     
-    // Count by status
-    const activeCount = services.filter(s => s.status === 'active').length;
-    const testCount = services.filter(s => s.status === 'test').length;
-    const suspendedCount = services.filter(s => s.status === 'suspended').length;
-    const expiredCount = services.filter(s => s.status === 'expired').length;
-    
-    const totalDataUsed = services.reduce((sum, s) => sum + parseFloat(s.data_used_gb || 0), 0);
-    
-    message += `✅ ${this.bold('Active:')} ${activeCount}\n`;
-    message += `🧪 ${this.bold('Test:')} ${testCount}\n`;
-    message += `⏸️ ${this.bold('Suspended:')} ${suspendedCount}\n`;
-    message += `⏰ ${this.bold('Expired:')} ${expiredCount}\n\n`;
-    
-    message += `💾 ${this.bold('Total Data Used:')} ${this.escapeMarkdown(totalDataUsed.toFixed(2))} GB\n\n`;
-    
-    // List active services only (for compact view)
-    const activeServices = services.filter(s => s.status === 'active');
-    if (activeServices.length > 0) {
-      message += `${this.bold('📡 Active Services:')}\n`;
-      activeServices.forEach((service, index) => {
-        const dataUsed = parseFloat(service.data_used_gb || 0).toFixed(2);
-        const dataLimit = service.data_limit_gb 
-          ? `${this.escapeMarkdown(service.data_limit_gb.toString())} GB` 
-          : 'Unlimited';
-        const remainingDays = Math.ceil(
-          (new Date(service.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-        );
-        
-        const serviceName = service.service_name || 'Service';
-        message += `\n${index + 1}\\. ${this.bold(this.escapeMarkdown(serviceName))}\n`;
-        message += `   📊 ${this.escapeMarkdown(dataUsed)} GB / ${dataLimit}\n`;
-        message += `   ⏰ ${this.escapeMarkdown(remainingDays.toString())} days remaining\n`;
-      });
-    }
-    
-    message += '\n💡 For detailed view of all services, use /my\\_services\\_detailed';
-    
+    const serviceName = service.service_name || 'سرویس';
+    message += `\n${index + 1}\\. ${this.bold(this.escapeMarkdown(serviceName))}\n`;
+    message += `   📊 ${this.escapeMarkdown(dataUsed)} GB / ${dataLimit}\n`;
+    message += `   ⏰ ${this.escapeMarkdown(remainingDays.toString())} روز باقی مانده\n`;
+  });
+}
+
+message += '\n💡 برای مشاهده جزئیات کامل همه سرویس‌ها از سرویس های من استفاده کنید';
+
     return message;
   }
 
