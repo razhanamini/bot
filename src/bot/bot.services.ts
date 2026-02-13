@@ -287,13 +287,13 @@ export class BotService {
        const user = await db.getUserByTelegramId(ctx.from!.id);
     const configs = await db.getUserConfigs(user.id); 
     if(configs.length == 0){
-      await ctx.editMessageText(
+      await ctx.sendMessage(
         BotMessages.noActiveConfigs(),
         { parse_mode: 'MarkdownV2' }
       );
     }
 
-    await ctx.editMessageText(
+    await ctx.sendMessage(
        BotMessages.userConfigs(configs),
         { parse_mode: 'MarkdownV2' }
       );
