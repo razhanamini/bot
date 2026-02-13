@@ -71,7 +71,7 @@ export class BotMessages {
 
   // No active configs
   static noActiveConfigs(): string {
-    return `📭 *شما هیچ کانفیگ فعالی ندارید\\.*
+return `📭 *شما هیچ کانفیگ فعالی ندارید\\.*
 
 🛒 برای خرید سرویس از کیبورد زیر استفاده کنید  
 🎁 یا برای دریافت تست رایگان از کیبورد زیر استفاده کنید\\.`;
@@ -79,27 +79,31 @@ export class BotMessages {
   }
 
   // User configs list
-  static userConfigs(configs: UserConfig[]): string {
-let message = `📋 *سرویس‌های فعال شما:*\n\n`;
+static userConfigs(configs: UserConfig[]): string {
+  let message = `📋 *سرویس‌های فعال شما:*\n\n`;
 
-configs.forEach((config, index) => {
-  const expiresDate = new Date(config.expires_at).toLocaleDateString();
-  const remainingDays = Math.ceil(
-    (new Date(config.expires_at).getTime() - Date.now()) /
-    (1000 * 60 * 60 * 24)
-  );
-  const dataUsed = Math.floor(config.data_used_gb);
+  const escapeMarkdown = (text: string) => {
+    return text.replace(/[_*\[\]()~`>#+\-=|{}.!]/g, '\\$&');
+  };
 
-  message += `${index + 1}\\. *${config.service_id}*\n`;
-  message += `   🔹 *وضعیت:* ${config.status}\n`;
-  message += `   📅 *تاریخ انقضا:* ${expiresDate} \\(${remainingDays} روز باقی مانده\\)\n`;
-  message += `   📊 *میزان مصرف:* ${dataUsed} گیگابایت\n`;
-  message += `   🔗 *لینک اتصال:* \`${config.vless_link}\`\n\n`;
-});
+  configs.forEach((config, index) => {
+    const expiresDate = new Date(config.expires_at).toLocaleDateString();
+    const remainingDays = Math.ceil(
+      (new Date(config.expires_at).getTime() - Date.now()) /
+      (1000 * 60 * 60 * 24)
+    );
+    const dataUsed = Math.floor(config.data_used_gb);
 
+    message += `${index + 1}\\. *${config.service_id}*\n`;
+    message += `   🔹 *وضعیت:* ${escapeMarkdown(config.status)}\n`;
+    message += `   📅 *تاریخ انقضا:* ${escapeMarkdown(expiresDate)} \\(${remainingDays} روز باقی\\-مانده\\)\n`;
+    message += `   📊 *میزان مصرف:* ${dataUsed} گیگابایت\n`;
+    message += `   🔗 *لینک اتصال:* \`${escapeMarkdown(config.vless_link)}\`\n\n`;
+  });
 
-    return message;
-  }
+  return message;
+}
+
 
   // Already used test config
   static alreadyUsedTest(): string {
@@ -132,7 +136,6 @@ static paymentInvoice(payment: any, amount: number,cardOwner:string): string {
 
 💵 *مبلغ:* \\$${formattedAmount}
 💳 *شماره کارت:* ${this.escapeMarkdown(payment.card_number)}
-🏦 *بانک:* ${this.escapeMarkdown('نام بانک')}
 👤 *صاحب حساب:* ${cardOwner}
 
 لطفاً دقیقاً مبلغ \\$${formattedAmount} را به شماره کارت بالا واریز کنید\\.  
