@@ -13,13 +13,13 @@ const PERSIAN_BUTTONS = {
   ADD_FUNDS: '💰 افزایش موجودی',
   MY_ACCOUNT: '👤 حساب من',
   SUPPORT: '🆘 پشتیبانی',
-  MY_CONFIGS:'📡 کانفیگ های من'
+  MY_CONFIGS: '📡 کانفیگ های من'
 } as const;
 
 export class BotService {
 
 
-  
+
 
 
   private bot: Telegraf;
@@ -80,21 +80,21 @@ export class BotService {
     this.bot.command('support', (ctx) => this.handleSupport(ctx));
     this.bot.command('how_to_use', (ctx) => this.handleHowToUse(ctx));
     this.bot.command('test_config', (ctx) => this.handleTestConfig(ctx)); // ✅ Fixed: changed from 'test_service' to 'test_config'
-  
-  
-  // Map Persian text to handlers
-  this.bot.hears(PERSIAN_BUTTONS.BUY, (ctx) => this.handleBuyService(ctx));
-  this.bot.hears(PERSIAN_BUTTONS.MY_SERVICES, (ctx) => this.handleMyServices(ctx));
-  this.bot.hears(PERSIAN_BUTTONS.TEST_CONFIG, (ctx) => this.handleTestConfig(ctx));
-  this.bot.hears(PERSIAN_BUTTONS.ADD_FUNDS, (ctx) => this.handleAddFunds(ctx));
-  this.bot.hears(PERSIAN_BUTTONS.MY_ACCOUNT, (ctx) => this.handleMyAccount(ctx));
-  this.bot.hears(PERSIAN_BUTTONS.SUPPORT, (ctx) => this.handleSupport(ctx));
-  this.bot.hears(PERSIAN_BUTTONS.MY_CONFIGS, (ctx) => this.handleMyConfigs(ctx));
+
+
+    // Map Persian text to handlers
+    this.bot.hears(PERSIAN_BUTTONS.BUY, (ctx) => this.handleBuyService(ctx));
+    this.bot.hears(PERSIAN_BUTTONS.MY_SERVICES, (ctx) => this.handleMyServices(ctx));
+    this.bot.hears(PERSIAN_BUTTONS.TEST_CONFIG, (ctx) => this.handleTestConfig(ctx));
+    this.bot.hears(PERSIAN_BUTTONS.ADD_FUNDS, (ctx) => this.handleAddFunds(ctx));
+    this.bot.hears(PERSIAN_BUTTONS.MY_ACCOUNT, (ctx) => this.handleMyAccount(ctx));
+    this.bot.hears(PERSIAN_BUTTONS.SUPPORT, (ctx) => this.handleSupport(ctx));
+    this.bot.hears(PERSIAN_BUTTONS.MY_CONFIGS, (ctx) => this.handleMyConfigs(ctx));
 
 
   }
 
-  
+
 
   private setupCallbacks() {
     this.bot.action(/^service_(\d+)$/, async (ctx) => this.handleServiceSelect(ctx));
@@ -140,12 +140,12 @@ export class BotService {
       parse_mode: 'MarkdownV2',
       ...Markup.keyboard([
         [PERSIAN_BUTTONS.BUY, PERSIAN_BUTTONS.MY_SERVICES],
-      [PERSIAN_BUTTONS.TEST_CONFIG, PERSIAN_BUTTONS.ADD_FUNDS],
-      [PERSIAN_BUTTONS.MY_ACCOUNT, PERSIAN_BUTTONS.SUPPORT],
-      [PERSIAN_BUTTONS.MY_CONFIGS]
+        [PERSIAN_BUTTONS.TEST_CONFIG, PERSIAN_BUTTONS.ADD_FUNDS],
+        [PERSIAN_BUTTONS.MY_ACCOUNT, PERSIAN_BUTTONS.SUPPORT],
+        [PERSIAN_BUTTONS.MY_CONFIGS]
       ]).resize()
     });
-    
+
   }
 
   async handleBuyService(ctx: Context) {
@@ -283,10 +283,10 @@ export class BotService {
     }
   }
 
-  async handleMyConfigs(ctx: Context){
-       const user = await db.getUserByTelegramId(ctx.from!.id);
-    const configs = await db.getUserConfigs(user.id); 
-    if(configs.length == 0){
+  async handleMyConfigs(ctx: Context) {
+    const user = await db.getUserByTelegramId(ctx.from!.id);
+    const configs = await db.getUserConfigs(user.id);
+    if (configs.length == 0) {
       await ctx.sendMessage(
         BotMessages.noActiveConfigs(),
         { parse_mode: 'MarkdownV2' }
@@ -294,9 +294,9 @@ export class BotService {
     }
 
     await ctx.sendMessage(
-       BotMessages.userConfigs(configs),
-        { parse_mode: 'MarkdownV2' }
-      );
+      BotMessages.userConfigs(configs),
+      { parse_mode: 'MarkdownV2' }
+    );
   }
 
   async handleConfirmPurchase(ctx: any) {
@@ -486,13 +486,17 @@ export class BotService {
     }
 
 
-    if(payment.status == 'confirmed'){
+    if (payment.status == 'confirmed') {
+
+      this.adminChatIds.forEach(async (id) => {
         await this.bot.telegram.sendMessage(
-      payment.telegram_id,
-      BotMessages.paymentAlreadyConfirmed(),
-      { parse_mode: 'MarkdownV2' }
-    );
-    return;
+          id,
+          BotMessages.paymentAlreadyConfirmed(),
+          { parse_mode: 'MarkdownV2' }
+        );
+      });
+ 
+      return;
     }
 
     // Update payment status
