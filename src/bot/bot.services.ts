@@ -1,5 +1,5 @@
 import { Telegraf, Context, Markup } from 'telegraf';
-import dotenv from 'dotenv';
+import dotenv, { config } from 'dotenv';
 import db from '../database/database.service';
 import { BotMessages } from './messages';
 import v2rayServices from '../services/v2ray.services';
@@ -12,7 +12,8 @@ const PERSIAN_BUTTONS = {
   TEST_CONFIG: '🎁 تست رایگان',
   ADD_FUNDS: '💰 افزایش موجودی',
   MY_ACCOUNT: '👤 حساب من',
-  SUPPORT: '🆘 پشتیبانی'
+  SUPPORT: '🆘 پشتیبانی',
+  My_CONFIGS:'📡 کانفیگ های من'
 } as const;
 
 export class BotService {
@@ -74,6 +75,7 @@ export class BotService {
     this.bot.command('buy', (ctx) => this.handleBuyService(ctx));
     this.bot.command('my_services', (ctx) => this.handleMyServices(ctx));
     this.bot.command('add_funds', (ctx) => this.handleAddFunds(ctx));
+    this.bot.command('MY_CONFIGS', (ctx) => this.handleMyConfigs(ctx));
     this.bot.command('my_account', (ctx) => this.handleMyAccount(ctx));
     this.bot.command('support', (ctx) => this.handleSupport(ctx));
     this.bot.command('how_to_use', (ctx) => this.handleHowToUse(ctx));
@@ -87,6 +89,7 @@ export class BotService {
   this.bot.hears(PERSIAN_BUTTONS.ADD_FUNDS, (ctx) => this.handleAddFunds(ctx));
   this.bot.hears(PERSIAN_BUTTONS.MY_ACCOUNT, (ctx) => this.handleMyAccount(ctx));
   this.bot.hears(PERSIAN_BUTTONS.SUPPORT, (ctx) => this.handleSupport(ctx));
+  this.bot.hears(PERSIAN_BUTTONS.My_CONFIGS, (ctx) => this.handleMyConfigs(ctx));
 
 
   }
@@ -277,6 +280,22 @@ export class BotService {
         { parse_mode: 'MarkdownV2' }
       );
     }
+  }
+
+  async handleMyConfigs(ctx: Context){
+       const user = await db.getUserByTelegramId(ctx.from!.id);
+    const configs = await db.getUserConfigs(user.id); 
+    if(configs.length == 0){
+      await ctx.editMessageText(
+        BotMessages.noActiveConfigs(),
+        { parse_mode: 'MarkdownV2' }
+      );
+    }
+
+    await ctx.editMessageText(
+       BotMessages.userConfigs(configs),
+        { parse_mode: 'MarkdownV2' }
+      );
   }
 
   async handleConfirmPurchase(ctx: any) {
