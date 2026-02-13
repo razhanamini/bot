@@ -327,10 +327,7 @@ INSERT INTO servers (
     name, domain, ip, api_port, api_token, max_users, 
     current_users, location, status, cpu_cores, ram_gb, xray_port
 ) VALUES
-('Frankfurt-1', 'de-v1-gwez.gemminie.xyz', '172.86.95.72', 5000, 'BviUVBkhZH2YdydyGiREet3f8vfWyEpGi5i2ozwOsGPVlXD6KKvxkXkXZ063mQV8', 200, 0, 'Germany', 'active', 1, 1,8445),
-('Frankfurt-2', 'de-v2-gwez.gemminie.xyz', '172.86.95.73', 5000, 'REPLACE_WITH_ACTUAL_TOKEN_2', 100, 0, 'Germany', 'maintenance', 4, 8,1212),
-('Amsterdam-1', 'nl-v1-gwez.gemminie.xyz', '172.86.95.74', 5000, 'REPLACE_WITH_ACTUAL_TOKEN_3', 80, 0, 'Netherlands', 'maintenance', 2, 4, 3300);
-
+('Frankfurt-1', 'de-v1-gwez.gemminie.xyz', '172.86.68.124', 5000, 'BviUVBkhZH2YdydyGiREet3f8vfWyEpGi5i2ozwOsGPVlXD6KKvxkXkXZ063mQV8', 250, 0, 'Germany', 'active', 1, 1,8445);
 -- =====================================================
 -- 10. FUNCTIONS AND TRIGGERS
 -- =====================================================
