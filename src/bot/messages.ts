@@ -131,7 +131,7 @@ static userConfigs(configs: UserConfig[]): string {
 
     // Split the comma-separated vless_link string into an array
     const vlessLinks = config.vless_link.split(',');
-    const platforms = ['Android', 'iOS', 'Windows', 'Linux', 'macOS'];
+    const platforms = ['Android', 'iOS', 'Windows', 'Linux', 'macOS','Standard'];
 
     // Start building the message for each config
     message += `${index + 1}\\. *${config.service_id}*\n`;
