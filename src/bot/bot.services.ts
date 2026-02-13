@@ -13,7 +13,7 @@ const PERSIAN_BUTTONS = {
   ADD_FUNDS: '💰 افزایش موجودی',
   MY_ACCOUNT: '👤 حساب من',
   SUPPORT: '🆘 پشتیبانی',
-  My_CONFIGS:'📡 کانفیگ های من'
+  MY_CONFIGS:'📡 کانفیگ های من'
 } as const;
 
 export class BotService {
@@ -89,7 +89,7 @@ export class BotService {
   this.bot.hears(PERSIAN_BUTTONS.ADD_FUNDS, (ctx) => this.handleAddFunds(ctx));
   this.bot.hears(PERSIAN_BUTTONS.MY_ACCOUNT, (ctx) => this.handleMyAccount(ctx));
   this.bot.hears(PERSIAN_BUTTONS.SUPPORT, (ctx) => this.handleSupport(ctx));
-  this.bot.hears(PERSIAN_BUTTONS.My_CONFIGS, (ctx) => this.handleMyConfigs(ctx));
+  this.bot.hears(PERSIAN_BUTTONS.MY_CONFIGS, (ctx) => this.handleMyConfigs(ctx));
 
 
   }
@@ -141,7 +141,8 @@ export class BotService {
       ...Markup.keyboard([
         [PERSIAN_BUTTONS.BUY, PERSIAN_BUTTONS.MY_SERVICES],
       [PERSIAN_BUTTONS.TEST_CONFIG, PERSIAN_BUTTONS.ADD_FUNDS],
-      [PERSIAN_BUTTONS.MY_ACCOUNT, PERSIAN_BUTTONS.SUPPORT]
+      [PERSIAN_BUTTONS.MY_ACCOUNT, PERSIAN_BUTTONS.SUPPORT],
+      [PERSIAN_BUTTONS.MY_CONFIGS]
       ]).resize()
     });
     
