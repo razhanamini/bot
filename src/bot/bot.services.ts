@@ -485,6 +485,16 @@ export class BotService {
       return;
     }
 
+
+    if(payment.status == 'confirmed'){
+        await this.bot.telegram.sendMessage(
+      payment.telegram_id,
+      BotMessages.paymentAlreadyConfirmed(),
+      { parse_mode: 'MarkdownV2' }
+    );
+    return;
+    }
+
     // Update payment status
     await db.updatePaymentStatus(paymentId, 'confirmed');
 

@@ -18,6 +18,11 @@ export class BotMessages {
     return `🎁 *قبل از خرید کانفیگ، اکانت تست رایگان دریافت کنید*`;
   }
 
+
+  static paymentAlreadyConfirmed(){
+    return `⚠️ Payment Already Confirmed ⚠️`;
+  }
+
   // No services available
   static noServicesAvailable(): string {
     return `⚠️ در حال حاضر سرویسی موجود نیست\\.`;
