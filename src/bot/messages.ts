@@ -131,6 +131,7 @@ static userConfigs(configs: UserConfig[]): string {
 
     // Split the comma-separated vless_link string into an array
     const vlessLinks = config.vless_link.split(',');
+    const platforms = ['Android', 'iOS', 'Windows', 'Linux', 'macOS'];
 
     // Start building the message for each config
     message += `${index + 1}\\. *${config.service_id}*\n`;
@@ -141,7 +142,7 @@ static userConfigs(configs: UserConfig[]): string {
     // Add each vless link to the message
     message += `   🔗 *لینک اتصال:*\n`;
     vlessLinks.forEach((link, linkIndex) => {
-      message += `      ${linkIndex + 1} \`${escapeMarkdown(link.trim())}\`\n`;
+      message += `\n${platforms[linkIndex]}\n \`${escapeMarkdown(link.trim())}\`\n`;
     });
 
     message += `\n`; // Add a blank line between configs
