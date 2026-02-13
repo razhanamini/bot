@@ -44,10 +44,11 @@ services:
       PGPASSWORD: v2raypass123
     entrypoint: >
       sh -c "while true; do
-      pg_dump -h postgres -U v2raybot v2ray_bot_db > /backups/backup_$(date +%Y-%m-%d_%H-%M-%S).sql;
+      pg_dump -h postgres -U v2raybot v2ray_bot_db > /backups/backup_$$(date +%Y-%m-%d_%H-%M-%S).sql;
       ls -tp /backups | grep -v '/$$' | tail -n +8 | xargs -I {} rm -- /backups/{};
       sleep 86400;
       done"
+
     restart: unless-stopped
 
 volumes:
