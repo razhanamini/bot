@@ -286,17 +286,23 @@ export class BotService {
   async handleMyConfigs(ctx: Context) {
     const user = await db.getUserByTelegramId(ctx.from!.id);
     const configs = await db.getUserConfigs(user.id);
+
+      
     if (configs.length == 0) {
       await ctx.sendMessage(
         BotMessages.noActiveConfigs(),
         { parse_mode: 'MarkdownV2' }
       );
+      return;
     }
+
+
 
     await ctx.sendMessage(
       BotMessages.userConfigs(configs),
       { parse_mode: 'MarkdownV2' }
     );
+
   }
 
   async handleConfirmPurchase(ctx: any) {
@@ -495,7 +501,20 @@ export class BotService {
           { parse_mode: 'MarkdownV2' }
         );
       });
- 
+
+      return;
+    }
+
+    if (payment.status == 'declined') {
+
+      this.adminChatIds.forEach(async (id) => {
+        await this.bot.telegram.sendMessage(
+          id,
+          BotMessages.paymentAlreadyDecliened(),
+          { parse_mode: 'MarkdownV2' }
+        );
+      });
+
       return;
     }
 

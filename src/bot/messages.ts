@@ -23,6 +23,11 @@ export class BotMessages {
     return `⚠️ Payment Already Confirmed ⚠️`;
   }
 
+
+    static paymentAlreadyDecliened(){
+    return `⚠️ Payment Already Decliend ⚠️`;
+  }
+
   // No services available
   static noServicesAvailable(): string {
     return `⚠️ در حال حاضر سرویسی موجود نیست\\.`;
@@ -84,6 +89,31 @@ return `📭 *شما هیچ کانفیگ فعالی ندارید\\.*
   }
 
   // User configs list
+// static userConfigs(configs: UserConfig[]): string {
+//   let message = `📋 *سرویس‌های فعال شما:*\n\n`;
+
+//   const escapeMarkdown = (text: string) => {
+//     return text.replace(/[_*\[\]()~`>#+\-=|{}.!]/g, '\\$&');
+//   };
+
+//   configs.forEach((config, index) => {
+//     const expiresDate = new Date(config.expires_at).toLocaleDateString();
+//     const remainingDays = Math.ceil(
+//       (new Date(config.expires_at).getTime() - Date.now()) /
+//       (1000 * 60 * 60 * 24)
+//     );
+//     const dataUsed = Math.floor(config.data_used_gb);
+
+//     message += `${index + 1}\\. *${config.service_id}*\n`;
+//     message += `   🔹 *وضعیت:* ${escapeMarkdown(config.status)}\n`;
+//     message += `   📅 *تاریخ انقضا:* ${escapeMarkdown(expiresDate)} \\(${remainingDays} روز باقی\\-مانده\\)\n`;
+//     message += `   📊 *میزان مصرف:* ${dataUsed} گیگابایت\n`;
+//     message += `   🔗 *لینک اتصال:* \`${escapeMarkdown(config.vless_link)}\`\n\n`;
+//   });
+
+//   return message;
+// }
+
 static userConfigs(configs: UserConfig[]): string {
   let message = `📋 *سرویس‌های فعال شما:*\n\n`;
 
@@ -99,15 +129,27 @@ static userConfigs(configs: UserConfig[]): string {
     );
     const dataUsed = Math.floor(config.data_used_gb);
 
+    // Split the comma-separated vless_link string into an array
+    const vlessLinks = config.vless_link.split(',');
+
+    // Start building the message for each config
     message += `${index + 1}\\. *${config.service_id}*\n`;
     message += `   🔹 *وضعیت:* ${escapeMarkdown(config.status)}\n`;
     message += `   📅 *تاریخ انقضا:* ${escapeMarkdown(expiresDate)} \\(${remainingDays} روز باقی\\-مانده\\)\n`;
     message += `   📊 *میزان مصرف:* ${dataUsed} گیگابایت\n`;
-    message += `   🔗 *لینک اتصال:* \`${escapeMarkdown(config.vless_link)}\`\n\n`;
+
+    // Add each vless link to the message
+    message += `   🔗 *لینک اتصال:*\n`;
+    vlessLinks.forEach((link, linkIndex) => {
+      message += `      ${linkIndex + 1}. \`${escapeMarkdown(link.trim())}\`\n`;
+    });
+
+    message += `\n`; // Add a blank line between configs
   });
 
   return message;
 }
+
 
 
   // Already used test config

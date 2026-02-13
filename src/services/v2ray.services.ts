@@ -250,12 +250,13 @@ export class V2RayService {
       
       // 9. Generate VLESS links for all platforms
       const links = this.generateVlessLinks(server, vlessInbound, newClient);
+      const linksList  = links.android+','+links.ios+','+links.linux+','+links.macos+','+links.standard+','+links.windows;
       
       // 10. Increment server user count
       await db.incrementServerUsers(server.id);
       
       // 11. Store in database with server reference
-      await this.storeUserConfigInDatabase(params, links.standard, newClient, vlessInbound, server);
+      await this.storeUserConfigInDatabase(params, linksList, newClient, vlessInbound, server);
 
       console.log(`✅ Service created for user ${params.userEmail} on server ${server.name}`);
       console.log(`📊 Server ${server.name} now has ${server.current_users + 1}/${server.max_users} users`);

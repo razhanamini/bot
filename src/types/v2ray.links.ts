@@ -67,7 +67,7 @@ export class VlessLinkGenerator {
   }
 
   static formatForDisplay(links: VlessLinkSet): string {
-    let message = '🔗 *Your V2Ray Configurations:*\n\n';
+    let message = '';
     
     message += '📱 *Android:*\n';
     message += `\`${this.escapeMarkdown(links.android)}\`\n\n`;
@@ -84,7 +84,6 @@ export class VlessLinkGenerator {
     message += '🍏 *macOS:*\n';
     message += `\`${this.escapeMarkdown(links.macos)}\`\n\n`;
     
-    message += '💡 *Usage Tip:* Copy the appropriate link for your device and import it into your V2Ray client';
     
     return message;
   }
