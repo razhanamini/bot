@@ -141,7 +141,7 @@ static userConfigs(configs: UserConfig[]): string {
     // Add each vless link to the message
     message += `   🔗 *لینک اتصال:*\n`;
     vlessLinks.forEach((link, linkIndex) => {
-      message += `      ${linkIndex + 1}. \`${escapeMarkdown(link.trim())}\`\n`;
+      message += `      ${linkIndex + 1} \`${escapeMarkdown(link.trim())}\`\n`;
     });
 
     message += `\n`; // Add a blank line between configs

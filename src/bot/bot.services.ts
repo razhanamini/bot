@@ -553,6 +553,33 @@ export class BotService {
       return;
     }
 
+
+        if (payment.status == 'confirmed') {
+
+      this.adminChatIds.forEach(async (id) => {
+        await this.bot.telegram.sendMessage(
+          id,
+          BotMessages.paymentAlreadyConfirmed(),
+          { parse_mode: 'MarkdownV2' }
+        );
+      });
+
+      return;
+    }
+
+    if (payment.status == 'declined') {
+
+      this.adminChatIds.forEach(async (id) => {
+        await this.bot.telegram.sendMessage(
+          id,
+          BotMessages.paymentAlreadyDecliened(),
+          { parse_mode: 'MarkdownV2' }
+        );
+      });
+
+      return;
+    }
+
     await db.updatePaymentStatus(paymentId, 'declined');
 
     // Notify user
