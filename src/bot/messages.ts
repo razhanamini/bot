@@ -427,7 +427,7 @@ message += `⏰ ${this.bold('منقضی شده:')} ${expiredCount}\n\n`;
 message += `💾 ${this.bold('کل مصرف دیتا:')} ${this.escapeMarkdown(totalDataUsed.toFixed(2))} GB\n\n`;
 
 // List active services only (for compact view)
-const activeServices = services.filter(s => s.status === 'active');
+const activeServices = services.filter(s => s.status === 'active' || s.status === 'test');
 if (activeServices.length > 0) {
   message += `${this.bold('📡 سرویس‌های فعال:')}\n`;
   activeServices.forEach((service, index) => {

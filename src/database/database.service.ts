@@ -43,9 +43,14 @@ class DatabaseService {
   }
 
   async getServices() {
+    // const result = await this.query(
+    //   'SELECT * FROM services WHERE is_active = true ORDER BY price'
+    // );
     const result = await this.query(
-      'SELECT * FROM services WHERE is_active = true ORDER BY price'
-    );
+  'SELECT * FROM services WHERE is_active = true AND id <> $1 ORDER BY price',
+  [1111]
+);
+
     return result.rows;
   }
 
@@ -58,14 +63,24 @@ class DatabaseService {
   }
 
   async getUserConfigs(userId: number) {
+    // const result = await this.query(
+    //   `SELECT uc.*, s.name as service_name, s.duration_days, s.data_limit_gb
+    //    FROM user_configs uc
+    //    JOIN services s ON uc.service_id = s.id
+    //    WHERE uc.user_id = $1 AND uc.status = 'active'
+    //    ORDER BY uc.expires_at DESC`,
+    //   [userId]
+    // );
     const result = await this.query(
-      `SELECT uc.*, s.name as service_name, s.duration_days, s.data_limit_gb
-       FROM user_configs uc
-       JOIN services s ON uc.service_id = s.id
-       WHERE uc.user_id = $1 AND uc.status = 'active'
-       ORDER BY uc.expires_at DESC`,
-      [userId]
-    );
+  `SELECT uc.*, s.name as service_name, s.duration_days, s.data_limit_gb
+   FROM user_configs uc
+   JOIN services s ON uc.service_id = s.id
+   WHERE uc.user_id = $1
+     AND uc.status IN ('active', 'test')
+   ORDER BY uc.expires_at DESC`,
+  [userId]
+);
+
     return result.rows;
   }
 
