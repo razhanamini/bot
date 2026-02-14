@@ -225,10 +225,7 @@ export class V2RayService {
 
       // 4. Generate UUID and calculate expiry
       const uuid = uuidv4();
-      // uncomment and CHANGEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEe
-      // const expireTime = Date.now() + (params.durationDays * 24 * 60 * 60 * 1000);
-      const minutes = 2; // 30 minutes from now
-const expireTime = Date.now() + (minutes * 60 * 1000);
+      const expireTime = Date.now() + (params.durationDays * 24 * 60 * 60 * 1000);
       const createdAt = new Date().toISOString();
       
       // 5. Create new client
