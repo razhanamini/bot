@@ -4,12 +4,12 @@ import { v4 as uuidv4 } from 'uuid';
 import cron from 'node-cron';
 import db from '../database/database.service';
 import { BotService } from '../bot/bot.services';
-import { 
-  V2RayConfig, 
-  Client, 
-  XrayStatusResponse, 
-  XrayStatusData, 
-  UserBandwidth, 
+import {
+  V2RayConfig,
+  Client,
+  XrayStatusResponse,
+  XrayStatusData,
+  UserBandwidth,
   ServiceCreateParams,
   ServiceMonitorResult,
   Server,
@@ -67,20 +67,41 @@ export class V2RayService {
 
   async selectOptimalServer(): Promise<Server> {
     console.log('🖥️ Selecting optimal server for new user...');
-    
+
     const availableServers = await db.getAvailableServers();
-    
+
     if (availableServers.length === 0) {
       throw new Error('No available servers with capacity');
     }
-    
+
     // Select server with least current users (load balancing)
     const selectedServer = availableServers[0];
-    
+
     console.log(`✅ Selected server: ${selectedServer.name} (${selectedServer.location})`);
     console.log(`📊 Current usage: ${selectedServer.current_users}/${selectedServer.max_users} users`);
-    
+
     return selectedServer;
+  }
+
+  async selectOptimalTestServer():Promise<Server>{
+
+        console.log('🖥️ Selecting optimal server for new user...');
+
+    const availableServers = await db.getAvailableTestServers();
+
+    if (availableServers.length === 0) {
+      throw new Error('No available servers with capacity');
+    }
+
+    // Select server with least current users (load balancing)
+    const selectedServer = availableServers[0];
+
+    console.log(`✅ Selected server: ${selectedServer.name} (${selectedServer.location})`);
+    console.log(`📊 Current usage: ${selectedServer.current_users}/${selectedServer.max_users} users`);
+
+    return selectedServer;
+
+
   }
 
   // ================ API METHODS (SERVER-AWARE) ================
@@ -90,15 +111,15 @@ export class V2RayService {
       console.log(`📡 Fetching config from server ${server.name}...`);
       const http = this.getHttpClient(server);
       const response = await http.get('/api/xray/config');
-      
+
       if (!response.data.success) {
         throw new Error('API returned success: false');
       }
-      
+
       if (!response.data.config) {
         throw new Error('No config in response');
       }
-      
+
       return response.data.config;
     } catch (error: any) {
       console.error(`❌ Error fetching config from server ${server.name}:`, error.message);
@@ -110,14 +131,14 @@ export class V2RayService {
     try {
       console.log(`📤 Updating config on server ${server.name}...`);
       const http = this.getHttpClient(server);
-      
+
       const requestBody = { config };
       const response = await http.put('/api/xray/config', requestBody);
-      
+
       if (!response.data.success) {
         throw new Error(`Update failed: ${response.data.message || 'Unknown error'}`);
       }
-      
+
       console.log(`✅ Config updated on ${server.name}: ${response.data.message}`);
       return true;
     } catch (error: any) {
@@ -130,18 +151,18 @@ export class V2RayService {
     try {
       console.log(`🔄 Restarting Xray service on server ${server.name}...`);
       const http = this.getHttpClient(server);
-      
+
       const response = await http.post('/api/xray/restart');
-      
+
       if (!response.data.success) {
         throw new Error(`Restart failed: ${response.data.message || 'Unknown error'}`);
       }
-      
+
       console.log(`✅ Xray service restarted on ${server.name}: ${response.data.message}`);
       return true;
     } catch (error: any) {
       console.error(`❌ Error restarting Xray service on server ${server.name}:`, error.message);
-      
+
       // Don't throw on restart failure - config is already updated
       console.warn(`⚠️ Service restart failed on ${server.name}, but config was updated`);
       return false;
@@ -152,35 +173,35 @@ export class V2RayService {
     try {
       console.log(`📡 Fetching status from server ${server.name}...`);
       const http = this.getHttpClient(server);
-      
+
       const response = await http.get('/api/xray/status');
-      
+
       if (!response.data.success) {
         throw new Error('API returned success: false');
       }
-      
+
       if (!response.data.data) {
         throw new Error('No data in response');
       }
-      
+
       let parsedData: any;
       if (typeof response.data.data === 'string') {
         parsedData = JSON.parse(response.data.data);
       } else {
         parsedData = response.data.data;
       }
-      
+
       if (!parsedData.isOk) {
         throw new Error('Xray status is not OK');
       }
-      
+
       if (!parsedData.data) {
         parsedData.data = {};
       }
       if (!parsedData.data.users) {
         parsedData.data.users = [];
       }
-      
+
       return parsedData;
     } catch (error: any) {
       console.error(`❌ Error fetching status from server ${server.name}:`, error.message);
@@ -194,7 +215,7 @@ export class V2RayService {
 
   // ================ SERVICE CREATION (MULTI-SERVER) ================
 
-  async createService(params: ServiceCreateParams): Promise<{
+  async createService(params: ServiceCreateParams, isTestService: boolean): Promise<{
     success: boolean;
     links?: VlessLinkSet;
     message?: string;
@@ -202,15 +223,24 @@ export class V2RayService {
   }> {
     try {
       console.log(`🚀 Creating service for user ${params.userEmail}...`);
-      
+
+      if (isTestService) {
+
+        const server = await this.selectOptimalTestServer();
+
+      }
+      else {
+        const server = await this.selectOptimalServer();
+
+      }
       // 1. Select optimal server with capacity
       const server = await this.selectOptimalServer();
-      
+
       // 2. Get current config from selected server
       const config = await this.getConfig(server);
-      
+
       // 3. Find VLESS inbound
-      const vlessInbound = config.inbounds.find(inbound => 
+      const vlessInbound = config.inbounds.find(inbound =>
         inbound.protocol === 'vless'
       );
 
@@ -227,7 +257,7 @@ export class V2RayService {
       const uuid = uuidv4();
       const expireTime = Date.now() + (params.durationDays * 24 * 60 * 60 * 1000);
       const createdAt = new Date().toISOString();
-      
+
       // 5. Create new client
       const newClient: Client = {
         id: uuid,
@@ -241,26 +271,26 @@ export class V2RayService {
 
       // 6. Add client to config
       vlessInbound.settings.clients.push(newClient);
-      
+
       // 7. Update config on server
       await this.updateConfig(server, config);
-      
+
       // 8. Restart service (don't throw on failure)
       await this.restartService(server);
-      
+
       // 9. Generate VLESS links for all platforms
       const links = this.generateVlessLinks(server, vlessInbound, newClient);
-      const linksList  = links.android+','+links.ios+','+links.linux+','+links.macos+','+links.standard+','+links.windows;
-      
+      const linksList = links.android + ',' + links.ios + ',' + links.linux + ',' + links.macos + ',' + links.standard + ',' + links.windows;
+
       // 10. Increment server user count
       await db.incrementServerUsers(server.id);
-      
+
       // 11. Store in database with server reference
       await this.storeUserConfigInDatabase(params, linksList, newClient, vlessInbound, server);
 
       console.log(`✅ Service created for user ${params.userEmail} on server ${server.name}`);
       console.log(`📊 Server ${server.name} now has ${server.current_users + 1}/${server.max_users} users`);
-      
+
       return {
         success: true,
         links: links,
@@ -288,7 +318,7 @@ export class V2RayService {
     try {
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + params.durationDays);
-      
+
       await db.query(
         `INSERT INTO user_configs (
           user_id, service_id, server_id, vless_link, status, expires_at,
@@ -307,7 +337,7 @@ export class V2RayService {
           params.dataLimitGB
         ]
       );
-      
+
       console.log(`✅ User config stored in database for server ${server.name}`);
     } catch (error: any) {
       console.error('❌ Error storing user config in database:', error.message);
@@ -318,21 +348,21 @@ export class V2RayService {
   private generateVlessLinks(server: Server, inbound: any, client: Client): VlessLinkSet {
     const serverHost = server.domain;
     const serverPort = server.xray_port || 8445;
-    
+
     const streamSettings = inbound.streamSettings;
     const security = streamSettings?.security || 'none';
     const networkType = streamSettings?.network || 'tcp';
-    
+
     let sni = '';
     let publicKey = process.env.REALITY_PUBLIC_KEY;
     let shortId = '';
-    
+
     if (security === 'reality' && streamSettings?.realitySettings) {
       const reality = streamSettings.realitySettings;
       sni = reality.serverNames?.[0] || 'play.google.com';
       shortId = reality.shortIds?.[0] || '';
     }
-    
+
     const linkParams: VlessLinkParams = {
       uuid: client.id,
       serverHost,
@@ -346,7 +376,7 @@ export class V2RayService {
       flow: client.flow || '',
       encryption: inbound.settings.decryption || 'none'
     };
-    
+
     return VlessLinkGenerator.generateLinkSet(linkParams);
   }
 
@@ -360,8 +390,8 @@ export class V2RayService {
       }
 
       const config = await this.getConfig(server);
-      
-      const vlessInbound = config.inbounds.find(inbound => 
+
+      const vlessInbound = config.inbounds.find(inbound =>
         inbound.protocol === 'vless'
       );
 
@@ -373,7 +403,7 @@ export class V2RayService {
       vlessInbound.settings.clients = vlessInbound.settings.clients.filter(
         (client: Client) => client.email !== userEmail
       );
-      
+
       if (vlessInbound.settings.clients.length === initialCount) {
         console.log(`User ${userEmail} not found in config on server ${server.name}`);
         return false;
@@ -381,10 +411,10 @@ export class V2RayService {
 
       await this.updateConfig(server, config);
       await this.restartService(server);
-      
+
       // Decrement server user count
       await db.decrementServerUsers(server.id);
-      
+
       console.log(`✅ User ${userEmail} removed from server ${server.name}`);
       return true;
     } catch (error: any) {
@@ -402,7 +432,7 @@ export class V2RayService {
     }
 
     console.log('⏰ Starting multi-server monitoring (every 5 minutes)...');
-    
+
     cron.schedule('*/1 * * * *', async () => {
       console.log('🔄 Running multi-server monitor...');
       await this.checkAllServers();
@@ -423,7 +453,7 @@ export class V2RayService {
 
       // Update server statistics
       await this.updateServerStatistics();
-      
+
       console.log('✅ Multi-server monitoring completed');
     } catch (error: any) {
       console.error('❌ Multi-server monitoring error:', error.message);
@@ -433,10 +463,10 @@ export class V2RayService {
   private async checkServer(server: Server): Promise<void> {
     try {
       console.log(`🔍 Checking server ${server.name} (${server.ip})...`);
-      
+
       // Get status and update user counts
       const status = await this.getStatus(server);
-      
+
       // Update server user count based on actual config
       let userCount = 0;
       if (status.isOk && status.data && status.data.users) {
@@ -453,19 +483,19 @@ export class V2RayService {
           console.error(`⚠️ Could not get config from server ${server.name}`);
         }
       }
-      
+
       // Update server user count in database
       await db.updateServerCurrentUsers(server.id, userCount);
-      
+
       // Check bandwidth usage for users on this server
       if (status.isOk && status.data && status.data.users) {
         await this.checkServerBandwidth(server, status.data.users);
       }
-      
+
       console.log(`✅ Server ${server.name}: ${userCount}/${server.max_users} users`);
     } catch (error: any) {
       console.error(`❌ Error checking server ${server.name}:`, error.message);
-      
+
       // Mark server as offline if multiple failures
       // You might want to implement a failure counter
     }
@@ -480,7 +510,7 @@ export class V2RayService {
 
       // Get all active services on this server
       const activeServices = await this.getActiveServicesOnServer(server.id);
-      
+
       for (const service of activeServices) {
         await this.checkServiceBandwidth(service, bandwidthMap);
       }
@@ -514,24 +544,24 @@ export class V2RayService {
     try {
       const userEmail = service.client_email;
       const bandwidth = bandwidthMap.get(userEmail);
-      
+
       if (!bandwidth) return;
-      
+
       const usedGB = (bandwidth.uplink + bandwidth.downlink) / 1073741824;
       const totalGB = service.data_limit_gb;
-      
+
       // Update usage in database
       await db.query(
         'UPDATE user_configs SET data_used_gb = $1, updated_at = NOW() WHERE id = $2',
         [usedGB, service.id]
       );
-      
+
       // Check if data limit reached
       if (totalGB && usedGB >= totalGB) {
         console.log(`⚠️ Data limit reached for user ${service.user_id} on server ${service.server_id}`);
         await this.handleDataLimitReached(service);
       }
-      
+
       // Check if expired
       const now = new Date();
       const expiresAt = new Date(service.expires_at);
@@ -547,18 +577,18 @@ export class V2RayService {
   private async handleDataLimitReached(service: any): Promise<void> {
     try {
       await this.removeUserFromConfig(service.client_email, service.server_id);
-      
+
       await db.query(
         'UPDATE user_configs SET status = $1, updated_at = NOW() WHERE id = $2',
         ['suspended', service.id]
       );
-      
-   await this.notifyUser(
-  service.telegram_id,
-  `⚠️ *محدودیت داده به پایان رسید*\n\n` +
-  ` V2Ray شما در سرور به حد مجاز مصرف داده رسید\n` +
-  `⏸️ سرویس شما به حالت تعلیق درآمده است`
-);
+
+      await this.notifyUser(
+        service.telegram_id,
+        `⚠️ *محدودیت داده به پایان رسید*\n\n` +
+        ` V2Ray شما در سرور به حد مجاز مصرف داده رسید\n` +
+        `⏸️ سرویس شما به حالت تعلیق درآمده است`
+      );
 
     } catch (error: any) {
       console.error('Error handling data limit reached:', error.message);
@@ -568,18 +598,18 @@ export class V2RayService {
   private async handleServiceExpired(service: any): Promise<void> {
     try {
       await this.removeUserFromConfig(service.client_email, service.server_id);
-      
+
       await db.query(
         'UPDATE user_configs SET status = $1, updated_at = NOW() WHERE id = $2',
         ['expired', service.id]
       );
-      
-await this.notifyUser(
-  service.telegram_id,
-  `⏰ *سرویس منقضی شد*\n\n` +
-  `سرویس V2Ray شما در سرور ${service.server_name} منقضی شده است\n\n` +
-  `❌ سرویس شما غیرفعال شده است`
-);
+
+      await this.notifyUser(
+        service.telegram_id,
+        `⏰ *سرویس منقضی شد*\n\n` +
+        `سرویس V2Ray شما در سرور ${service.server_name} منقضی شده است\n\n` +
+        `❌ سرویس شما غیرفعال شده است`
+      );
 
     } catch (error: any) {
       console.error('Error handling service expiry:', error.message);
@@ -611,7 +641,7 @@ await this.notifyUser(
     } catch (error: any) {
       console.error('Error notifying user:', error.message);
     }
-  } 
+  }
 
   // ================ ADMIN METHODS ================
 

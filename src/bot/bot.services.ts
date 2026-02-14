@@ -241,7 +241,7 @@ export class BotService {
       };
 
       // Create test service using V2Ray service
-      const result = await v2rayServices.createService(params);
+      const result = await v2rayServices.createService(params,true);
 
       if (!result.success || !result.links) {
         throw new Error(result.message || 'Failed to create test service');
@@ -330,7 +330,7 @@ export class BotService {
         dataLimitGB: service.data_limit_gb
       };
 
-      const result = await v2rayServices.createService(params);
+      const result = await v2rayServices.createService(params,false);
 
       if (!result.success) {
         throw new Error(result.message || 'Failed to create service');
