@@ -500,7 +500,7 @@ export class V2RayService {
         FROM user_configs uc
         JOIN users u ON uc.user_id = u.id
         LEFT JOIN services s ON uc.service_id = s.id
-        WHERE uc.server_id = $1 AND uc.status = 'active'`,
+        WHERE uc.server_id = $1 AND uc.status IN ('active', 'test')`,
         [serverId]
       );
       return result.rows;

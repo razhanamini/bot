@@ -141,7 +141,7 @@ export interface ServiceCreateParams {
   serviceId: number;
   serviceName: string;
   durationDays: number;
-  dataLimitGB?: number | string;
+  dataLimitGB?: number;
   port?: number;
 }
 

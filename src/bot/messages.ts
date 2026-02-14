@@ -463,9 +463,11 @@ message += '\n💡 برای مشاهده جزئیات کامل همه سرویس
       const expiresDate = new Date(service.expires_at).toLocaleDateString();
       const createdDate = new Date(service.created_at).toLocaleDateString();
       const updatedDate = new Date(service.updated_at).toLocaleDateString();
-      const remainingDays = Math.ceil(
+      const calculatedDays = Math.ceil(
         (new Date(service.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
       );
+      const remainingDays = Math.max(0, calculatedDays);
+
       
       const dataUsed = parseFloat(service.data_used_gb || 0).toFixed(2);
       const dataLimit = service.data_limit_gb 
