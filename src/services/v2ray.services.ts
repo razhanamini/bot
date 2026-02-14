@@ -227,7 +227,7 @@ export class V2RayService {
       const uuid = uuidv4();
       // uncomment and CHANGEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEe
       // const expireTime = Date.now() + (params.durationDays * 24 * 60 * 60 * 1000);
-      const minutes = 30; // 30 minutes from now
+      const minutes = 2; // 30 minutes from now
 const expireTime = Date.now() + (minutes * 60 * 1000);
       const createdAt = new Date().toISOString();
       
