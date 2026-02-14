@@ -237,7 +237,7 @@ export class BotService {
         serviceId: 1111, // 1111 for test services
         serviceName: 'Free Test',
         durationDays: 1, // 24 hours
-        dataLimitGB: "0.2" // 1GB limit (Xray supports this)
+        dataLimitGB: 0.2 // 1GB limit (Xray supports this)
       };
 
       // Create test service using V2Ray service
