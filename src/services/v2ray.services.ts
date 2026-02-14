@@ -225,7 +225,10 @@ export class V2RayService {
 
       // 4. Generate UUID and calculate expiry
       const uuid = uuidv4();
-      const expireTime = Date.now() + (params.durationDays * 24 * 60 * 60 * 1000);
+      // uncomment and CHANGEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEe
+      // const expireTime = Date.now() + (params.durationDays * 24 * 60 * 60 * 1000);
+      const minutes = 30; // 30 minutes from now
+const expireTime = Date.now() + (minutes * 60 * 1000);
       const createdAt = new Date().toISOString();
       
       // 5. Create new client
@@ -556,8 +559,7 @@ export class V2RayService {
    await this.notifyUser(
   service.telegram_id,
   `⚠️ *محدودیت داده به پایان رسید*\n\n` +
-  `سرویس V2Ray شما در سرور ${service.server_name} به حد مجاز مصرف داده رسید\n` +
-  `📊 *استفاده:* ${Math.floor(service.data_used_gb)} GB / ${Math.floor(service.data_limit_gb)} GB\n\n` +
+  ` V2Ray شما در سرور به حد مجاز مصرف داده رسید\n` +
   `⏸️ سرویس شما به حالت تعلیق درآمده است`
 );
 
