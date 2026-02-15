@@ -131,8 +131,8 @@ async handleRedeemGift(ctx: any) {
       const user = await db.getUserByTelegramId(ctx.from!.id); // Get updated user
       await ctx.editMessageText(
         `✅ *کد هدیه با موفقیت اعمال شد*\n\n` +
-        `💰 مبلغ: +${this.escapeMarkdown(result.amount?.toLocaleString()!)} تومان\n` +
-        `💳 موجودی جدید: ${this.escapeMarkdown(user.balance.toLocaleString()!)} تومان\n\n` +
+        `💰 مبلغ: +${Math.floor(result.amount!)} تومان\n` +
+        `💳 موجودی جدید: ${Math.floor(user.balance)} تومان\n\n` +
         `از انتخاب ما سپاسگزاریم 🙏`,
         { parse_mode: 'Markdown' }
       );
@@ -474,7 +474,7 @@ const giftCodePattern = /^GIFT[-]?[A-Z0-9]{4,20}$/i;
       processingMsg.message_id,
       undefined,
       `🎁 *کد هدیه معتبر*\n\n` +
-      `مبلغ: ${validation.amount?.toLocaleString()} تومان\n\n` +
+      `مبلغ: ${Math.floor(validation.amount!)} تومان\n\n` +
       `آیا مایل به اعمال این کد هستید؟`,
       {
         parse_mode: 'Markdown',
