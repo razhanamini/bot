@@ -318,6 +318,97 @@ async createTestUserConfig(
 }
 
 
+// Add to your database service class
+
+async validateGiftCode(code: string, userId: number): Promise<{ valid: boolean; message: string; amount?: number; codeId?: number }> {
+  try {
+    // Check if code exists and is valid
+    const result = await this.query(
+      `SELECT * FROM gift_codes 
+       WHERE code = $1 
+       AND is_active = true 
+       AND (expires_at IS NULL OR expires_at > NOW())
+       AND current_uses < max_uses`,
+      [code]
+    );
+
+    if (result.rows.length === 0) {
+      return { valid: false, message: '❌ کد هدیه نامعتبر یا منقضی شده است' };
+    }
+
+    const giftCode = result.rows[0];
+
+    // Check if user already used this code
+    const usageCheck = await this.query(
+      'SELECT id FROM gift_code_usages WHERE gift_code_id = $1 AND user_id = $2',
+      [giftCode.id, userId]
+    );
+
+    if (usageCheck.rows.length > 0) {
+      return { valid: false, message: '❌ شما قبلاً از این کد استفاده کرده‌اید' };
+    }
+
+    return { 
+      valid: true, 
+      message: '✅ کد هدیه معتبر است', 
+      amount: giftCode.amount,
+      codeId: giftCode.id 
+    };
+
+  } catch (error) {
+    console.error('Error validating gift code:', error);
+    return { valid: false, message: '❌ خطا در بررسی کد هدیه' };
+  }
+}
+
+async redeemGiftCode(codeId: number, userId: number): Promise<{ success: boolean; message: string; amount?: number }> {
+  try {
+    // Start transaction
+    await this.query('BEGIN');
+
+    // Update gift code usage count
+    await this.query(
+      'UPDATE gift_codes SET current_uses = current_uses + 1 WHERE id = $1',
+      [codeId]
+    );
+
+    // Record usage
+    await this.query(
+      'INSERT INTO gift_code_usages (gift_code_id, user_id) VALUES ($1, $2)',
+      [codeId, userId]
+    );
+
+    // Get the amount
+    const giftCode = await this.query(
+      'SELECT amount FROM gift_codes WHERE id = $1',
+      [codeId]
+    );
+
+    const amount = giftCode.rows[0].amount;
+
+    // Add to user balance
+    await this.query(
+      'UPDATE users SET balance = balance + $1 WHERE id = $2',
+      [amount, userId]
+    );
+
+    await this.query('COMMIT');
+
+    return { 
+      success: true, 
+      message: '✅ کد هدیه با موفقیت اعمال شد', 
+      amount 
+    };
+
+  } catch (error) {
+    await this.query('ROLLBACK');
+    console.error('Error redeeming gift code:', error);
+    return { success: false, message: '❌ خطا در اعمال کد هدیه' };
+  }
+}
+
+
+
 }
 
 export default new DatabaseService();

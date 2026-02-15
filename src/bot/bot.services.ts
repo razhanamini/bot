@@ -13,7 +13,8 @@ const PERSIAN_BUTTONS = {
   ADD_FUNDS: '💰 افزایش موجودی',
   MY_ACCOUNT: '👤 حساب من',
   SUPPORT: '🆘 پشتیبانی',
-  MY_CONFIGS: '📡 کانفیگ های من'
+  MY_CONFIGS: '📡 کانفیگ های من',
+  GIFT_CODE: '🎁 کد هدیه'  // Add this line
 } as const;
 
 export class BotService {
@@ -80,6 +81,7 @@ export class BotService {
     this.bot.command('support', (ctx) => this.handleSupport(ctx));
     this.bot.command('how_to_use', (ctx) => this.handleHowToUse(ctx));
     this.bot.command('test_config', (ctx) => this.handleTestConfig(ctx)); // ✅ Fixed: changed from 'test_service' to 'test_config'
+      this.bot.command('gift', (ctx) => this.handleGiftCode(ctx)); // Also add as command
 
 
     // Map Persian text to handlers
@@ -90,7 +92,7 @@ export class BotService {
     this.bot.hears(PERSIAN_BUTTONS.MY_ACCOUNT, (ctx) => this.handleMyAccount(ctx));
     this.bot.hears(PERSIAN_BUTTONS.SUPPORT, (ctx) => this.handleSupport(ctx));
     this.bot.hears(PERSIAN_BUTTONS.MY_CONFIGS, (ctx) => this.handleMyConfigs(ctx));
-
+  this.bot.hears(PERSIAN_BUTTONS.GIFT_CODE, (ctx) => this.handleGiftCode(ctx));
 
   }
 
@@ -104,10 +106,49 @@ export class BotService {
     this.bot.action(/^cancel_payment_(\d+)$/, async (ctx) => this.handleCancelPayment(ctx));
     this.bot.action(/^confirm_payment_(\d+)$/, async (ctx) => this.handleAdminConfirmPayment(ctx));
     this.bot.action(/^decline_payment_(\d+)$/, async (ctx) => this.handleAdminDeclinePayment(ctx));
+    this.bot.action(/^redeem_gift_(\d+)$/, async (ctx) => this.handleRedeemGift(ctx));
+this.bot.action('cancel_gift', async (ctx) => this.handleCancelGift(ctx));
 
     this.bot.on('photo', async (ctx) => this.handlePhoto(ctx));
     this.bot.on('text', async (ctx) => this.handleText(ctx));
   }
+
+
+
+
+async handleRedeemGift(ctx: any) {
+  try {
+    const giftCodeId = parseInt(ctx.match[1]);
+    const user = await db.getUserByTelegramId(ctx.from!.id);
+    
+    await ctx.answerCbQuery('🔄 در حال اعمال کد');
+    await ctx.editMessageText('🔄 در حال اعمال کد هدیه');
+    
+    // Redeem the code
+    const result = await db.redeemGiftCode(giftCodeId, user.id);
+    
+    if (result.success) {
+      const user = await db.getUserByTelegramId(ctx.from!.id); // Get updated user
+      await ctx.editMessageText(
+        `✅ *کد هدیه با موفقیت اعمال شد*\n\n` +
+        `💰 مبلغ: +${this.escapeMarkdown(result.amount?.toLocaleString()!)} تومان\n` +
+        `💳 موجودی جدید: ${this.escapeMarkdown(user.balance.toLocaleString()!)} تومان\n\n` +
+        `از انتخاب ما سپاسگزاریم 🙏`,
+        { parse_mode: 'Markdown' }
+      );
+    } else {
+      await ctx.editMessageText(result.message, { parse_mode: 'Markdown' });
+    }
+  } catch (error) {
+    console.error('Error in handleRedeemGift:', error);
+    await ctx.editMessageText('❌ خطا در اعمال کد هدیه', { parse_mode: 'Markdown' });
+  }
+}
+
+async handleCancelGift(ctx: any) {
+  await ctx.answerCbQuery('❌ عملیات لغو شد');
+  await ctx.deleteMessage();
+}
 
   async handleStart(ctx: Context) {
     const user = await db.getUserByTelegramId(ctx.from!.id);
@@ -142,11 +183,20 @@ export class BotService {
         [PERSIAN_BUTTONS.BUY, PERSIAN_BUTTONS.MY_SERVICES],
         [PERSIAN_BUTTONS.TEST_CONFIG, PERSIAN_BUTTONS.ADD_FUNDS],
         [PERSIAN_BUTTONS.MY_ACCOUNT, PERSIAN_BUTTONS.SUPPORT],
-        [PERSIAN_BUTTONS.MY_CONFIGS]
+        [PERSIAN_BUTTONS.MY_CONFIGS, PERSIAN_BUTTONS.GIFT_CODE]
       ]).resize()
     });
 
   }
+
+  async handleGiftCode(ctx: Context) {
+  await ctx.reply(
+    `🎁 *کد هدیه*\n\n` +
+    `لطفاً کد هدیه خود را ارسال کنید:`,
+    { parse_mode: 'Markdown' }
+  );
+}
+
 
   async handleBuyService(ctx: Context) {
     const services = await db.getServices();
@@ -392,6 +442,53 @@ export class BotService {
   async handleText(ctx: Context) {
     const text = (ctx.message as any).text;
     const user = await db.getUserByTelegramId(ctx.from!.id);
+
+
+const giftCodePattern = /^GIFT[-]?[A-Z0-9]{4,20}$/i;
+  
+  if (giftCodePattern.test(text.trim())) {
+    const code = text.trim().toUpperCase();
+    
+    // Send processing message
+    const processingMsg = await ctx.reply('🔄 در حال بررسی کد هدیه...');
+    
+    // Validate the code
+    const validation = await db.validateGiftCode(code, user.id);
+    
+    if (!validation.valid) {
+      await ctx.telegram.editMessageText(
+        ctx.chat!.id,
+        processingMsg.message_id,
+        undefined,
+        validation.message,
+        { parse_mode: 'Markdown' }
+      );
+      return;
+    }
+    
+    // Ask for confirmation
+    await ctx.telegram.editMessageText(
+      ctx.chat!.id,
+      processingMsg.message_id,
+      undefined,
+      `🎁 *کد هدیه معتبر*\n\n` +
+      `مبلغ: ${validation.amount?.toLocaleString()} تومان\n\n` +
+      `آیا مایل به اعمال این کد هستید؟`,
+      {
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [
+            [
+              Markup.button.callback('✅ بله', `redeem_gift_${validation.codeId}`),
+              Markup.button.callback('❌ خیر', 'cancel_gift')
+            ]
+          ]
+        }
+      }
+    );
+    return;
+  }
+
 
     // Check if user is in payment process
     if (!isNaN(parseFloat(text)) && parseFloat(text) > 0) {

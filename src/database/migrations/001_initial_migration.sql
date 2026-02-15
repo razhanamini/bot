@@ -133,7 +133,7 @@ CREATE TABLE user_configs (
     
     -- Constraints
     CONSTRAINT check_status CHECK (status IN ('active', 'test', 'suspended', 'expired', 'cancelled')),
-    CONSTRAINT check_data_used_positive CHECK (data_used_gb >= 0),
+    CONSTRAINT check_data_used_positive CHECK (data_used_gb >= 0)
     -- CONSTRAINT check_expires_at_future CHECK (expires_at > created_at)
     
     -- Prevent duplicate active services for same user+email+server
@@ -398,3 +398,35 @@ COMMENT ON COLUMN servers.api_token IS 'API authentication token for this server
 COMMENT ON COLUMN user_configs.data_limit_gb IS 'Data limit in GB (NULL = unlimited)';
 COMMENT ON COLUMN user_configs.client_email IS 'User email for identification in Xray config';
 COMMENT ON COLUMN payments.invoice_number IS 'Unique invoice identifier';
+
+
+
+-- =====================================================
+-- GIFT CODES TABLE
+-- =====================================================
+CREATE TABLE gift_codes (
+    id SERIAL PRIMARY KEY,
+    code VARCHAR(50) UNIQUE NOT NULL,
+    amount DECIMAL(10, 2) NOT NULL,
+    max_uses INTEGER DEFAULT 1,
+    current_uses INTEGER DEFAULT 0,
+    is_active BOOLEAN DEFAULT true,
+    expires_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_gift_codes_code ON gift_codes(code);
+CREATE INDEX idx_gift_codes_active ON gift_codes(is_active);
+
+-- =====================================================
+-- GIFT CODE USAGES TABLE
+-- =====================================================
+CREATE TABLE gift_code_usages (
+    id SERIAL PRIMARY KEY,
+    gift_code_id INTEGER REFERENCES gift_codes(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    redeemed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(gift_code_id, user_id)
+);
+
+CREATE INDEX idx_gift_usages_user ON gift_code_usages(user_id);
