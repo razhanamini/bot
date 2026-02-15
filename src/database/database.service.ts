@@ -403,7 +403,7 @@ async redeemGiftCode(codeId: number, userId: number): Promise<{ success: boolean
   } catch (error) {
     await this.query('ROLLBACK');
     console.error('Error redeeming gift code:', error);
-    return { success: false, message: '❌ خطا در اعمال کد هدیه' };
+    return { success: false, message: '❌ خطا در اعمال کsssssssد هدیه' };
   }
 }
 
