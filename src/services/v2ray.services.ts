@@ -258,7 +258,7 @@ export class V2RayService {
 
       // 4. Generate UUID and calculate expiry
       const uuid = uuidv4();
-      const oneHourMs = 60 * 60 * 1000;
+      const oneHourMs = 5 * 60 * 1000;
 
       const expireTestTime = oneHourMs + Date.now();
 
@@ -274,7 +274,8 @@ export class V2RayService {
         flow: '',
         limitIp: 0,
         totalGB: params.dataLimitGB?.toString(),
-        expireTime: isTestService? expireTestTime : expireTime,
+        // expireTime: expireTime
+        expireTime:  isTestService? expireTestTime : expireTime,
         createdAt: createdAt
       };
 
