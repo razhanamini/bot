@@ -141,7 +141,7 @@ async handleRedeemGift(ctx: any) {
     }
   } catch (error) {
     console.error('Error in handleRedeemGift:', error);
-    await ctx.editMessageText('❌ خطا در اعمال کد هدیه', { parse_mode: 'Markdown' });
+    await ctx.editMessageText('❌ خطا در اعمال کد jjjjjjjهدیه', { parse_mode: 'Markdown' });
   }
 }
 
@@ -445,7 +445,7 @@ async handleCancelGift(ctx: any) {
 
 
 const giftCodePattern = /^GIFT[-]?[A-Z0-9]{4,20}$/i;
-  
+
   if (giftCodePattern.test(text.trim())) {
     const code = text.trim().toUpperCase();
     
