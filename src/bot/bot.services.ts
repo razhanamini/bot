@@ -465,6 +465,8 @@ const giftCodePattern = /^GIFT[-]?[A-Z0-9]{4,20}$/i;
       );
       return;
     }
+
+    console.log("🎁🎁🎁Gift code valied🎁🎁🎁")
     
     // Ask for confirmation
     await ctx.telegram.editMessageText(
