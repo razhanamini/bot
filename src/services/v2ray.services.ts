@@ -83,9 +83,9 @@ export class V2RayService {
     return selectedServer;
   }
 
-  async selectOptimalTestServer():Promise<Server>{
+  async selectOptimalTestServer(): Promise<Server> {
 
-        console.log('🖥️ Selecting optimal server for new user...');
+    console.log('🖥️ Selecting optimal server for new user...');
 
     const availableServers = await db.getAvailableTestServers();
 
@@ -225,8 +225,11 @@ export class V2RayService {
       console.log(`🚀 Creating service for user ${params.userEmail}...`);
 
       if (isTestService) {
-
-        const server = await this.selectOptimalTestServer();
+        // enable this and you will be retrived only the servers that are 
+        // meant for test servers 
+        // use selectOptimalServer for not having this feature enabled
+        // const server = await this.selectOptimalTestServer();
+        const server = await this.selectOptimalServer();
 
       }
       else {
@@ -255,7 +258,13 @@ export class V2RayService {
 
       // 4. Generate UUID and calculate expiry
       const uuid = uuidv4();
+      const oneHourMs = 60 * 60 * 1000;
+
+      const expireTestTime = oneHourMs + Date.now();
+
       const expireTime = Date.now() + (params.durationDays * 24 * 60 * 60 * 1000);
+
+
       const createdAt = new Date().toISOString();
 
       // 5. Create new client
@@ -265,7 +274,7 @@ export class V2RayService {
         flow: '',
         limitIp: 0,
         totalGB: params.dataLimitGB?.toString(),
-        expireTime: expireTime,
+        expireTime: isTestService? expireTestTime : expireTime,
         createdAt: createdAt
       };
 

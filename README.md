@@ -33,3 +33,23 @@ notice that, through the payment confirmation process, it needs to send the reci
 and get them 2 buttons to confirm or decline the paymnet,
 for now, mock creting the actual services and return a dummy vless link, i will later on implement that,
 i need it simple and clean with good structure
+
+
+##Important notes while debugging
+
+1.
+the test services id is specifically set to 1111
+and the logic for detecting the test service works by looking for that specific id
+
+2. the test service's expiry time is set to one hour hardcoded into the v2ray.service's createService method
+such that if there is a test service being created, its expiry time is set to 1 hour 
+regardless of the amount in the database
+
+3. 
+if you want to enable the feature that allows you to have separate servers for test accounts,
+you could modify the code such that you use the OPTIONAL parameter of the createService method and 
+set it to true for test service creation and in the code you use selectOptimalTestServer function
+that function uses another method that works with the database which,
+the way we specify test servers is such that the servers that have the cpu_cores parameter
+in the database set to the specific number of 1111 are trated as test servers
+
