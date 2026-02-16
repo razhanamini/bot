@@ -275,7 +275,7 @@ export class V2RayService {
         limitIp: 0,
         totalGB: params.dataLimitGB?.toString(),
         // expireTime: expireTime
-        expireTime:  isTestService? expireTestTime : expireTime,
+        expireTime: isTestService ? expireTestTime : expireTime,
         createdAt: createdAt
       };
 
@@ -555,22 +555,23 @@ export class V2RayService {
       const userEmail = service.client_email;
       const bandwidth = bandwidthMap.get(userEmail);
 
-      if (!bandwidth) return;
+      if (bandwidth) {
+        const usedGB = (bandwidth.uplink + bandwidth.downlink) / 1073741824;
+        const totalGB = service.data_limit_gb;
 
-      const usedGB = (bandwidth.uplink + bandwidth.downlink) / 1073741824;
-      const totalGB = service.data_limit_gb;
+        // Update usage in database
+        await db.query(
+          'UPDATE user_configs SET data_used_gb = $1, updated_at = NOW() WHERE id = $2',
+          [usedGB, service.id]
+        );
 
-      // Update usage in database
-      await db.query(
-        'UPDATE user_configs SET data_used_gb = $1, updated_at = NOW() WHERE id = $2',
-        [usedGB, service.id]
-      );
-
-      // Check if data limit reached
-      if (totalGB && usedGB >= totalGB) {
-        console.log(`⚠️ Data limit reached for user ${service.user_id} on server ${service.server_id}`);
-        await this.handleDataLimitReached(service);
+        // Check if data limit reached
+        if (totalGB && usedGB >= totalGB) {
+          console.log(`⚠️ Data limit reached for user ${service.user_id} on server ${service.server_id}`);
+          await this.handleDataLimitReached(service);
+        }
       }
+
 
       // Check if expired
       const now = new Date();
