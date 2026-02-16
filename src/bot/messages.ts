@@ -34,6 +34,7 @@ export class BotMessages {
   }
 
   // Available services list
+  // add OFF prices to the menu message
   static availableServices(): string {
     return `📋 *Available Services:*`;
   }
@@ -45,7 +46,7 @@ export class BotMessages {
     return `📦 *جزئیات سرویس:*
 
 *نام سرویس:* ${this.escapeMarkdown(service.name)}
-*قیمت:* \\$${Math.floor(service.price)}
+*قیمت:* \\تومان${Math.floor(service.price)}
 *مدت اعتبار:* ${service.duration_days} روز
 *حجم ترافیک:* ${dataLimit}
 *توضیحات:* ${this.escapeMarkdown(service.description)}
@@ -162,7 +163,7 @@ return `⚠️ *شما قبلاً از اکانت تست رایگان خود ا�
   static testConfigActivated(): string {
    return `🎉 *اکانت تست رایگان فعال شد\\!*
 
-⏳ این اکانت تست تا 24 ساعت دیگر منقضی می‌شود\\.
+⏳ این اکانت تست تا 1 ساعت دیگر منقضی می‌شود\\.
 
 💡 برای خرید سرویس کامل از کیبورد استفاده کنید\\.`;
 

@@ -228,8 +228,8 @@ export class V2RayService {
         // enable this and you will be retrived only the servers that are 
         // meant for test servers 
         // use selectOptimalServer for not having this feature enabled
-        // const server = await this.selectOptimalTestServer();
-        const server = await this.selectOptimalServer();
+        const server = await this.selectOptimalTestServer();
+        // const server = await this.selectOptimalServer();
 
       }
       else {
@@ -258,7 +258,7 @@ export class V2RayService {
 
       // 4. Generate UUID and calculate expiry
       const uuid = uuidv4();
-      const oneHourMs = 2 * 60 * 1000;
+      const oneHourMs = 60 * 60 * 1000;
 
       const expireTestTime = oneHourMs + Date.now();
 
