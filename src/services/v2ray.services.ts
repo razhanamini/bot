@@ -258,7 +258,7 @@ export class V2RayService {
 
       // 4. Generate UUID and calculate expiry
       const uuid = uuidv4();
-      const oneHourMs = 5 * 60 * 1000;
+      const oneHourMs = 2 * 60 * 1000;
 
       const expireTestTime = oneHourMs + Date.now();
 
@@ -326,8 +326,8 @@ export class V2RayService {
     server: Server
   ): Promise<void> {
     try {
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + params.durationDays);
+      // const expiresAt = new Date();
+      // expiresAt.setDate(expiresAt.getDate() + params.durationDays);
 
       await db.query(
         `INSERT INTO user_configs (
@@ -340,7 +340,7 @@ export class V2RayService {
           server.id,
           vlessLink,
           'active',
-          expiresAt,
+          client.expireTime,
           0.00,
           client.email,
           inbound.tag || 'vless-reality-inbound',
