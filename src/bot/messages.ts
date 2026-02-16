@@ -183,11 +183,11 @@ static paymentInvoice(payment: any, amount: number,cardOwner:string): string {
   
   return `💰 *صورتحساب پرداخت* \\#${this.escapeMarkdown(payment.invoice_number)}
 
-💵 *مبلغ:* \\$${formattedAmount}
-💳 *شماره کارت:* ${this.escapeMarkdown(payment.card_number)}
+💵 *مبلغ:* \\${formattedAmount}
+💳 *شماره کارت:* \u200E${payment.card_number}\u200E
 👤 *صاحب حساب:* ${cardOwner}
 
-لطفاً دقیقاً مبلغ \\$${formattedAmount} را به شماره کارت بالا واریز کنید\\.  
+لطفاً دقیقاً مبلغ \\${formattedAmount} را به شماره کارت بالا واریز کنید\\.  
 سپس روی گزینه «پرداخت کردم» کلیک کرده و تصویر رسید را ارسال نمایید\\.`;
 
 }
