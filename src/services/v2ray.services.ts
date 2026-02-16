@@ -328,6 +328,8 @@ export class V2RayService {
     try {
       // const expiresAt = new Date();
       // expiresAt.setDate(expiresAt.getDate() + params.durationDays);
+      const expiresAt = new Date(client.expireTime!);
+
 
       await db.query(
         `INSERT INTO user_configs (
@@ -340,7 +342,7 @@ export class V2RayService {
           server.id,
           vlessLink,
           'active',
-          client.expireTime,
+          expiresAt,
           0.00,
           client.email,
           inbound.tag || 'vless-reality-inbound',
