@@ -224,20 +224,11 @@ export class V2RayService {
     try {
       console.log(`🚀 Creating service for user ${params.userEmail}...`);
 
-      if (isTestService) {
-        // enable this and you will be retrived only the servers that are 
-        // meant for test servers 
-        // use selectOptimalServer for not having this feature enabled
-        const server = await this.selectOptimalTestServer();
-        // const server = await this.selectOptimalServer();
-
-      }
-      else {
-        const server = await this.selectOptimalServer();
-
-      }
+  
       // 1. Select optimal server with capacity
-      const server = await this.selectOptimalServer();
+      const serverNormal = await this.selectOptimalServer();
+      const serverTest = await this.selectOptimalTestServer();
+      const server = isTestService ? serverTest : serverNormal;
 
       // 2. Get current config from selected server
       const config = await this.getConfig(server);
