@@ -283,15 +283,31 @@ async getServerStats(): Promise<any> {
 
 
 
+// async hasTestConfig(userId: number): Promise<boolean> {
+//   const result = await this.query(
+//     `SELECT COUNT(*) as count 
+//      FROM user_configs 
+//      WHERE user_id = $1 AND status = 'test'`,
+//     [userId]
+//   );
+//   return parseInt(result.rows[0].count) > 0;
+// }
+
 async hasTestConfig(userId: number): Promise<boolean> {
   const result = await this.query(
-    `SELECT COUNT(*) as count 
-     FROM user_configs 
-     WHERE user_id = $1 AND status = 'test'`,
+    `SELECT EXISTS (
+       SELECT 1
+       FROM user_configs
+       WHERE user_id = $1
+         AND service_id = 1111
+     ) AS has_test`,
     [userId]
   );
-  return parseInt(result.rows[0].count) > 0;
+
+  return result.rows[0].has_test;
 }
+
+
 
 // Override createUserConfig to handle test services
 async createTestUserConfig(
