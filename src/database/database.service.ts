@@ -180,17 +180,31 @@ class DatabaseService {
 
 // ================ SERVER METHODS ================
 
+// async getAvailableServers(): Promise<Server[]> {
+//     const result = await this.query(
+//         `SELECT * FROM servers 
+//          WHERE status = 'active' 
+//          AND is_active = true 
+//          AND current_users < max_users
+//          ORDER BY current_users ASC, id ASC`,
+//         []
+//     );
+//     return result.rows;
+// }
 async getAvailableServers(): Promise<Server[]> {
-    const result = await this.query(
-        `SELECT * FROM servers 
-         WHERE status = 'active' 
-         AND is_active = true 
-         AND current_users < max_users
-         ORDER BY current_users ASC, id ASC`,
-        []
-    );
-    return result.rows;
+  const result = await this.query(
+    `SELECT * FROM servers 
+     WHERE status = 'active' 
+       AND is_active = true 
+       AND current_users < max_users
+       AND cpu_cores <> 1111
+     ORDER BY current_users ASC, id ASC`,
+    []
+  );
+
+  return result.rows;
 }
+
 
 async getAvailableTestServers(): Promise<Server[]> {
   const result = await this.query(
