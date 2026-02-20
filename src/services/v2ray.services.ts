@@ -543,40 +543,112 @@ export class V2RayService {
     }
   }
 
-  private async checkServiceBandwidth(service: any, bandwidthMap: Map<string, UserBandwidth>): Promise<void> {
-    try {
-      const userEmail = service.client_email;
-      const bandwidth = bandwidthMap.get(userEmail);
+  // private async checkServiceBandwidth(service: any, bandwidthMap: Map<string, UserBandwidth>): Promise<void> {
+  //   try {
+  //     const userEmail = service.client_email;
+  //     const bandwidth = bandwidthMap.get(userEmail);
 
-      if (bandwidth) {
-        const usedGB = (bandwidth.uplink + bandwidth.downlink) / 1073741824;
-        const totalGB = service.data_limit_gb;
+  //     if (bandwidth) {
+  //       const usedGB = (bandwidth.uplink + bandwidth.downlink) / 1073741824;
+  //       const totalGB = service.data_limit_gb;
 
-        // Update usage in database
+  //       // Update usage in database
+  //       await db.query(
+  //         'UPDATE user_configs SET data_used_gb = $1, updated_at = NOW() WHERE id = $2',
+  //         [usedGB, service.id]
+  //       );
+
+  //       // Check if data limit reached
+  //       if (totalGB && usedGB >= totalGB) {
+  //         console.log(`⚠️ Data limit reached for user ${service.user_id} on server ${service.server_id}`);
+  //         await this.handleDataLimitReached(service);
+  //       }
+  //     }
+
+
+  //     // Check if expired
+  //     const now = new Date();
+  //     const expiresAt = new Date(service.expires_at);
+  //     if (expiresAt < now) {
+  //       console.log(`⚠️ Service expired for user ${service.user_id} on server ${service.server_id}`);
+  //       await this.handleServiceExpired(service);
+  //     }
+  //   } catch (error: any) {
+  //     console.error(`Error checking service ${service.id}:`, error.message);
+  //   }
+  // }
+  private async checkServiceBandwidth(
+  service: any,
+  bandwidthMap: Map<string, UserBandwidth>
+): Promise<void> {
+  try {
+    const userEmail = service.client_email;
+    const bandwidth = bandwidthMap.get(userEmail);
+
+    if (bandwidth) {
+      const currentUsedGB =
+        (bandwidth.uplink + bandwidth.downlink) / 1073741824;
+
+      const totalGB = service.data_limit_gb;
+
+      // Get current stored usage from DB
+      const result = await db.query(
+        'SELECT data_used_gb FROM user_configs WHERE id = $1',
+        [service.id]
+      );
+
+      if (result.rowCount === 0) {
+        console.warn(`Service config not found for id ${service.id}`);
+        return;
+      }
+
+      const storedUsedGB = parseFloat(result.rows[0].data_used_gb) || 0;
+
+      // Prevent decreasing usage (handles server restart reset)
+      const newUsedGB =
+        currentUsedGB > storedUsedGB ? currentUsedGB : storedUsedGB;
+
+      // Update only if changed
+      if (newUsedGB !== storedUsedGB) {
         await db.query(
-          'UPDATE user_configs SET data_used_gb = $1, updated_at = NOW() WHERE id = $2',
-          [usedGB, service.id]
+          `UPDATE user_configs 
+           SET data_used_gb = $1, updated_at = NOW() 
+           WHERE id = $2`,
+          [newUsedGB, service.id]
         );
-
-        // Check if data limit reached
-        if (totalGB && usedGB >= totalGB) {
-          console.log(`⚠️ Data limit reached for user ${service.user_id} on server ${service.server_id}`);
-          await this.handleDataLimitReached(service);
-        }
       }
 
-
-      // Check if expired
-      const now = new Date();
-      const expiresAt = new Date(service.expires_at);
-      if (expiresAt < now) {
-        console.log(`⚠️ Service expired for user ${service.user_id} on server ${service.server_id}`);
-        await this.handleServiceExpired(service);
+      // Check limit against the PERSISTED value
+      if (
+        totalGB !== null &&
+        totalGB !== undefined &&
+        newUsedGB >= totalGB
+      ) {
+        console.log(
+          `⚠️ Data limit reached for user ${service.user_id} on server ${service.server_id}`
+        );
+        await this.handleDataLimitReached(service);
       }
-    } catch (error: any) {
-      console.error(`Error checking service ${service.id}:`, error.message);
     }
+
+    // Check expiration
+    const now = new Date();
+    const expiresAt = new Date(service.expires_at);
+
+    if (expiresAt < now) {
+      console.log(
+        `⚠️ Service expired for user ${service.user_id} on server ${service.server_id}`
+      );
+      await this.handleServiceExpired(service);
+    }
+  } catch (error: any) {
+    console.error(
+      `Error checking service ${service.id}:`,
+      error.message
+    );
   }
+}
+
 
   private async handleDataLimitReached(service: any): Promise<void> {
     try {
