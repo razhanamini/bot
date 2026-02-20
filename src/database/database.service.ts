@@ -391,49 +391,93 @@ async validateGiftCode(code: string, userId: number): Promise<{ valid: boolean; 
   }
 }
 
-async redeemGiftCode(codeId: number, userId: number): Promise<{ success: boolean; message: string; amount?: number }> {
-  try {
-    // Start transaction
-    await this.query('BEGIN');
+// async redeemGiftCode(codeId: number, userId: number): Promise<{ success: boolean; message: string; amount?: number }> {
+//   try {
+//     // Start transaction
+//     await this.query('BEGIN');
 
-    // Update gift code usage count
-    await this.query(
+//     // Update gift code usage count
+//     await this.query(
+//       'UPDATE gift_codes SET current_uses = current_uses + 1 WHERE id = $1',
+//       [codeId]
+//     );
+
+//     // Record usage
+//     await this.query(
+//       'INSERT INTO gift_code_usages (gift_code_id, user_id) VALUES ($1, $2)',
+//       [codeId, userId]
+//     );
+
+//     // Get the amount
+//     const giftCode = await this.query(
+//       'SELECT amount FROM gift_codes WHERE id = $1',
+//       [codeId]
+//     );
+
+//     const amount = giftCode.rows[0].amount;
+
+//     // Add to user balance
+//     await this.query(
+//       'UPDATE users SET balance = balance + $1 WHERE id = $2',
+//       [amount, userId]
+//     );
+
+//     await this.query('COMMIT');
+
+    // return { 
+    //   success: true, 
+    //   message: '✅ کد هدیه با موفقیت اعمال شد', 
+    //   amount 
+    // };
+
+//   } catch (error) {
+//     await this.query('ROLLBACK');
+//     console.error('Error redeeming gift code:', error);
+//     return { success: false, message: '❌ خطا در اعمال کsssssssد هدیه' };
+//   }
+// }
+
+async redeemGiftCode(codeId: number, userId: number) {
+  const client = await this.pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    await client.query(
       'UPDATE gift_codes SET current_uses = current_uses + 1 WHERE id = $1',
       [codeId]
     );
 
-    // Record usage
-    await this.query(
+    await client.query(
       'INSERT INTO gift_code_usages (gift_code_id, user_id) VALUES ($1, $2)',
       [codeId, userId]
     );
 
-    // Get the amount
-    const giftCode = await this.query(
+    const giftCode = await client.query(
       'SELECT amount FROM gift_codes WHERE id = $1',
       [codeId]
     );
 
     const amount = giftCode.rows[0].amount;
 
-    // Add to user balance
-    await this.query(
+    await client.query(
       'UPDATE users SET balance = balance + $1 WHERE id = $2',
       [amount, userId]
     );
 
-    await this.query('COMMIT');
+    await client.query('COMMIT');
 
+    // return { success: true, amount };
     return { 
       success: true, 
       message: '✅ کد هدیه با موفقیت اعمال شد', 
       amount 
     };
-
   } catch (error) {
-    await this.query('ROLLBACK');
-    console.error('Error redeeming gift code:', error);
-    return { success: false, message: '❌ خطا در اعمال کsssssssد هدیه' };
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
   }
 }
 

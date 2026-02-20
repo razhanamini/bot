@@ -226,9 +226,12 @@ export class V2RayService {
 
   
       // 1. Select optimal server with capacity
-      const serverNormal = await this.selectOptimalServer();
-      const serverTest = await this.selectOptimalTestServer();
-      const server = isTestService ? serverTest : serverNormal;
+      // const serverNormal = await this.selectOptimalServer();
+      // const serverTest = await this.selectOptimalTestServer();
+      // const server = isTestService ? serverTest : serverNormal;
+      const server = isTestService
+  ? await this.selectOptimalTestServer()
+  : await this.selectOptimalServer();
 
       // 2. Get current config from selected server
       const config = await this.getConfig(server);
@@ -450,9 +453,10 @@ export class V2RayService {
       const servers = await db.getAllActiveServers();
       console.log(`🔍 Checking ${servers.length} active servers...`);
 
-      for (const server of servers) {
-        await this.checkServer(server);
-      }
+      // for (const server of servers) {
+      //   await this.checkServer(server);
+      // }
+      await Promise.all(servers.map(s => this.checkServer(s)));
 
       // Update server statistics
       await this.updateServerStatistics();
