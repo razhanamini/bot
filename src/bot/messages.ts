@@ -405,52 +405,111 @@ static paymentVerificationRequired(payment: any, user: any): string {
   }
 
 
-  static userServices(services: any[]): string {
-    if (services.length === 0) {
-      return this.noActiveConfigs();
-    }
+//   static userServices(services: any[]): string {
+//     if (services.length === 0) {
+//       return this.noActiveConfigs();
+//     }
 
-   let message = `📋 *خلاصه سرویس‌های شما*\n\n`;
+//    let message = `📋 *خلاصه سرویس‌های شما*\n\n`;
 
-// Count by status
-const activeCount = services.filter(s => s.status === 'active').length;
-const testCount = services.filter(s => s.status === 'test').length;
-const suspendedCount = services.filter(s => s.status === 'suspended').length;
-const expiredCount = services.filter(s => s.status === 'expired').length;
+// // Count by status
+// const activeCount = services.filter(s => s.status === 'active').length;
+// const testCount = services.filter(s => s.status === 'test').length;
+// const suspendedCount = services.filter(s => s.status === 'suspended').length;
+// const expiredCount = services.filter(s => s.status === 'expired').length;
 
-const totalDataUsed = services.reduce((sum, s) => sum + parseFloat(s.data_used_gb || 0), 0);
+// const totalDataUsed = services.reduce((sum, s) => sum + parseFloat(s.data_used_gb || 0), 0);
 
-message += `✅ ${this.bold('فعال:')} ${activeCount}\n`;
-message += `🧪 ${this.bold('تست:')} ${testCount}\n`;
-message += `⏸️ ${this.bold('معلق:')} ${suspendedCount}\n`;
-message += `⏰ ${this.bold('منقضی شده:')} ${expiredCount}\n\n`;
+// message += `✅ ${this.bold('فعال:')} ${activeCount}\n`;
+// message += `🧪 ${this.bold('تست:')} ${testCount}\n`;
+// message += `⏸️ ${this.bold('معلق:')} ${suspendedCount}\n`;
+// message += `⏰ ${this.bold('منقضی شده:')} ${expiredCount}\n\n`;
 
-message += `💾 ${this.bold('کل مصرف دیتا:')} ${this.escapeMarkdown(totalDataUsed.toFixed(2))} GB\n\n`;
+// message += `💾 ${this.bold('کل مصرف دیتا:')} ${this.escapeMarkdown(totalDataUsed.toFixed(2))} GB\n\n`;
 
-// List active services only (for compact view)
-const activeServices = services.filter(s => s.status === 'active' || s.status === 'test');
-if (activeServices.length > 0) {
-  message += `${this.bold('📡 سرویس‌های فعال:')}\n`;
-  activeServices.forEach((service, index) => {
-    const dataUsed = parseFloat(service.data_used_gb || 0).toFixed(2);
-    const dataLimit = service.data_limit_gb 
-      ? `${this.escapeMarkdown(service.data_limit_gb.toString())} GB` 
-      : 'نامحدود';
-    const remainingDays = Math.ceil(
-      (new Date(service.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-    );
+// // List active services only (for compact view)
+// const activeServices = services.filter(s => s.status === 'active' || s.status === 'test');
+// if (activeServices.length > 0) {
+//   message += `${this.bold('📡 سرویس‌های فعال:')}\n`;
+//   activeServices.forEach((service, index) => {
+//     const dataUsed = parseFloat(service.data_used_gb || 0).toFixed(2);
+//     const dataLimit = service.data_limit_gb 
+//       ? `${this.escapeMarkdown(service.data_limit_gb.toString())} GB` 
+//       : 'نامحدود';
+//     const remainingDays = Math.ceil(
+//       (new Date(service.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+//     );
     
-    const serviceName = service.service_name || 'سرویس';
-    message += `\n${index + 1}\\. ${this.bold(this.escapeMarkdown(serviceName))}\n`;
-    message += `   📊 ${this.escapeMarkdown(dataUsed)} GB / ${dataLimit}\n`;
-    message += `   ⏰ ${this.escapeMarkdown(remainingDays.toString())} روز باقی مانده\n`;
-  });
-}
+//     const serviceName = service.service_name || 'سرویس';
+//     message += `\n${index + 1}\\. ${this.bold(this.escapeMarkdown(serviceName))}\n`;
+//     message += `   📊 ${this.escapeMarkdown(dataUsed)} GB / ${dataLimit}\n`;
+//     message += `   ⏰ ${this.escapeMarkdown(remainingDays.toString())} روز باقی مانده\n`;
+//   });
+// }
 
-message += '\n💡 برای مشاهده جزئیات کامل همه سرویس‌ها از سرویس های من استفاده کنید';
+// message += '\n💡 برای مشاهده جزئیات کامل همه سرویس‌ها از سرویس های من استفاده کنید';
 
-    return message;
+//     return message;
+//   }
+
+static userServices(services: any[]): string {
+  if (services.length === 0) {
+    return this.noActiveConfigs();
   }
+
+  let message = `📋 خلاصه سرویس‌های شما\n\n`;
+
+  // Count by status
+  const activeCount = services.filter(s => s.status === 'active').length;
+  const testCount = services.filter(s => s.status === 'test').length;
+  const suspendedCount = services.filter(s => s.status === 'suspended').length;
+  const expiredCount = services.filter(s => s.status === 'expired').length;
+
+  const totalDataUsed = services.reduce(
+    (sum, s) => sum + parseFloat(s.data_used_gb || 0),
+    0
+  );
+
+  message += `✅ فعال: ${activeCount}\n`;
+  message += `🧪 تست: ${testCount}\n`;
+  message += `⏸️ معلق: ${suspendedCount}\n`;
+  message += `⏰ منقضی شده: ${expiredCount}\n\n`;
+
+  message += `💾 کل مصرف دیتا: ${totalDataUsed.toFixed(2)} GB\n\n`;
+
+  // List active services only (for compact view)
+  const activeServices = services.filter(
+    s => s.status === 'active' || s.status === 'test'
+  );
+
+  if (activeServices.length > 0) {
+    message += `📡 سرویس‌های فعال:\n`;
+
+    activeServices.forEach((service, index) => {
+      const dataUsed = parseFloat(service.data_used_gb || 0).toFixed(2);
+
+      const dataLimit = service.data_limit_gb
+        ? `${service.data_limit_gb.toString()} GB`
+        : 'نامحدود';
+
+      const remainingDays = Math.ceil(
+        (new Date(service.expires_at).getTime() - Date.now()) /
+          (1000 * 60 * 60 * 24)
+      );
+
+      const serviceName = service.service_name || 'سرویس';
+
+      message += `\n${index + 1}. ${serviceName}\n`;
+      message += `   📊 ${dataUsed} GB / ${dataLimit}\n`;
+      message += `   ⏰ ${remainingDays} روز باقی مانده\n`;
+    });
+  }
+
+  message +=
+    '\n💡 برای مشاهده جزئیات کامل همه سرویس‌ها از سرویس های من استفاده کنید';
+
+  return message;
+}
 
   // Detailed view with service IDs for support reference
   static userServicesDetailed(services: any[]): string {
