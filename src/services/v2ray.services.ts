@@ -551,198 +551,50 @@ export class V2RayService {
     }
   }
 
-  // private async checkServiceBandwidth(service: any, bandwidthMap: Map<string, UserBandwidth>): Promise<void> {
-  //   try {
-  //     const userEmail = service.client_email;
-  //     const bandwidth = bandwidthMap.get(userEmail);
-
-  //     if (bandwidth) {
-  //       const usedGB = (bandwidth.uplink + bandwidth.downlink) / 1073741824;
-  //       const totalGB = service.data_limit_gb;
-
-  //       // Update usage in database
-  //       await db.query(
-  //         'UPDATE user_configs SET data_used_gb = $1, updated_at = NOW() WHERE id = $2',
-  //         [usedGB, service.id]
-  //       );
-
-  //       // Check if data limit reached
-  //       if (totalGB && usedGB >= totalGB) {
-  //         console.log(`⚠️ Data limit reached for user ${service.user_id} on server ${service.server_id}`);
-  //         await this.handleDataLimitReached(service);
-  //       }
-  //     }
-
-
-  //     // Check if expired
-  //     const now = new Date();
-  //     const expiresAt = new Date(service.expires_at);
-  //     if (expiresAt < now) {
-  //       console.log(`⚠️ Service expired for user ${service.user_id} on server ${service.server_id}`);
-  //       await this.handleServiceExpired(service);
-  //     }
-  //   } catch (error: any) {
-  //     console.error(`Error checking service ${service.id}:`, error.message);
-  //   }
-  // }
-//   private async checkServiceBandwidth(
-//   service: any,
-//   bandwidthMap: Map<string, UserBandwidth>
-// ): Promise<void> {
-//   try {
-//     const userEmail = service.client_email;
-//     const bandwidth = bandwidthMap.get(userEmail);
-
-//     if (bandwidth) {
-//       const currentUsedGB =
-//         (bandwidth.uplink + bandwidth.downlink) / 1073741824;
-
-//       const totalGB = service.data_limit_gb;
-
-//       // Get current stored usage from DB
-//       const result = await db.query(
-//         'SELECT data_used_gb FROM user_configs WHERE id = $1',
-//         [service.id]
-//       );
-
-//       if (result.rowCount === 0) {
-//         console.warn(`Service config not found for id ${service.id}`);
-//         return;
-//       }
-
-//       const storedUsedGB = parseFloat(result.rows[0].data_used_gb) || 0;
-
-//       // Prevent decreasing usage (handles server restart reset)
-//       const newUsedGB =
-//         currentUsedGB > storedUsedGB ? currentUsedGB : storedUsedGB;
-
-//       // Update only if changed
-//       if (newUsedGB !== storedUsedGB) {
-//         await db.query(
-//           `UPDATE user_configs 
-//            SET data_used_gb = $1, updated_at = NOW() 
-//            WHERE id = $2`,
-//           [newUsedGB, service.id]
-//         );
-//       }
-
-//       // Check limit against the PERSISTED value
-//       if (
-//         totalGB !== null &&
-//         totalGB !== undefined &&
-//         newUsedGB >= totalGB
-//       ) {
-//         console.log(
-//           `⚠️ Data limit reached for user ${service.user_id} on server ${service.server_id}`
-//         );
-//         await this.handleDataLimitReached(service);
-//       }
-//     }
-
-//     // Check expiration
-//     const now = new Date();
-//     const expiresAt = new Date(service.expires_at);
-
-//     if (expiresAt < now) {
-//       console.log(
-//         `⚠️ Service expired for user ${service.user_id} on server ${service.server_id}`
-//       );
-//       await this.handleServiceExpired(service);
-//     }
-//   } catch (error: any) {
-//     console.error(
-//       `Error checking service ${service.id}:`,
-//       error.message
-//     );
-//   }
-// }
-
 private async checkServiceBandwidth(
   service: any,
   bandwidthMap: Map<string, UserBandwidth>
 ): Promise<void> {
-  try {
-    const userEmail = service.client_email;
-    const bandwidth = bandwidthMap.get(userEmail);
 
-    if (bandwidth) {
-      const currentSessionGB = (bandwidth.uplink + bandwidth.downlink) / 1073741824;
-      const totalGB = service.data_limit_gb;
+  const userEmail = service.client_email;
+  const bandwidth = bandwidthMap.get(userEmail);
+  if (!bandwidth) return;
 
-      // Get current stored total from DB
-      const result = await db.query(
-        'SELECT data_used_gb FROM user_configs WHERE id = $1',
-        [service.id]
-      );
+  const currentBytes = bandwidth.uplink + bandwidth.downlink;
 
-      if (result.rowCount === 0) {
-        console.warn(`Service config not found for id ${service.id}`);
-        return;
-      }
+  const result = await db.query(
+    `SELECT data_used_gb, last_session_usage
+     FROM user_configs
+     WHERE id = $1`,
+    [service.id]
+  );
 
-      const storedTotalGB = parseFloat(result.rows[0].data_used_gb) || 0;
+  if (result.rowCount === 0) return;
 
-      // Get last session usage to detect resets
-      const lastSessionResult = await db.query(
-        'SELECT last_session_usage FROM user_configs WHERE id = $1',
-        [service.id]
-      );
-      
-      const lastSessionGB = parseFloat(lastSessionResult.rows[0]?.last_session_usage) || 0;
+  const storedTotalGB = parseFloat(result.rows[0].data_used_gb) || 0;
+  const lastSessionGB = parseFloat(result.rows[0].last_session_usage) || 0;
 
-      // If current session is less than last session, server restarted
-      if (currentSessionGB < lastSessionGB) {
-        // Server restarted - add the previous session to total
-        const newTotalGB = storedTotalGB + lastSessionGB;
-        
-        await db.query(
-          `UPDATE user_configs 
-           SET data_used_gb = $1,
-               last_session_usage = $2,
-               updated_at = NOW()
-           WHERE id = $3`,
-          [newTotalGB, currentSessionGB, service.id]
-        );
+  const currentSessionGB = currentBytes / 1073741824;
 
-        // Check limit against new total
-        if (totalGB && newTotalGB >= totalGB) {
-          await this.handleDataLimitReached(service);
-        }
-      } else {
-        // Normal case - just update the session usage
-        // await db.query(
-        //   `UPDATE user_configs 
-        //    SET last_session_usage = $1,
-        //        updated_at = NOW()
-        //    WHERE id = $2`,
-        //   [currentSessionGB, service.id]
-        // );
+  let deltaGB = currentSessionGB - lastSessionGB;
 
-         const additionalGB = currentSessionGB - lastSessionGB;
-  const newTotalGB = storedTotalGB + additionalGB;
-  
+  // Server restart detected
+  if (deltaGB < 0) {
+    deltaGB = currentSessionGB;
+  }
+
+  const newTotalGB = storedTotalGB + deltaGB;
+
   await db.query(
-    `UPDATE user_configs 
+    `UPDATE user_configs
      SET data_used_gb = $1,
          last_session_usage = $2,
          updated_at = NOW()
      WHERE id = $3`,
     [newTotalGB, currentSessionGB, service.id]
   );
-  
-      }
-    }
-
-    // Check expiration
-    const now = new Date();
-    const expiresAt = new Date(service.expires_at);
-    if (expiresAt < now) {
-      await this.handleServiceExpired(service);
-    }
-  } catch (error: any) {
-    console.error(`Error checking service ${service.id}:`, error.message);
-  }
 }
+
 
   private async handleDataLimitReached(service: any): Promise<void> {
     try {
