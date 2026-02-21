@@ -265,7 +265,7 @@ export class V2RayService {
       const newClient: Client = {
         id: uuid,
         email: params.userEmail,
-        flow: '',
+        flow: 'xtls-rprx-vision',
         limitIp: 0,
         totalGB: params.dataLimitGB?.toString(),
         // expireTime: expireTime

@@ -55,8 +55,12 @@ export class VlessLinkGenerator {
     
 
 
-    
-    return `vless://${params.uuid}@${params.serverHost}:${params.serverPort}?security=reality&encryption=none&pbk=${params.publicKey}&headerType=none&fp=${fingerprint}&type=tcp&sni=${params.sni}&sid=${params.shortId}#${params.email}`;
+ 
+    // return `vless://${params.uuid}@${params.serverHost}:${params.serverPort}?security=reality&encryption=none&pbk=${params.publicKey}&headerType=none&fp=${fingerprint}&type=tcp&sni=${params.sni}&sid=${params.shortId}#${params.email}`;
+  if (params.flow !== '') {
+    return `vless://${params.uuid}@${params.serverHost}:${params.serverPort}?security=reality&encryption=none&pbk=${params.publicKey}&headerType=none&fp=${fingerprint}&type=tcp&sni=${params.sni}&sid=${params.shortId}&flow=${params.flow}#${params.email}`;
+}
+return `vless://${params.uuid}@${params.serverHost}:${params.serverPort}?security=reality&encryption=none&pbk=${params.publicKey}&headerType=none&fp=${fingerprint}&type=tcp&sni=${params.sni}&sid=${params.shortId}#${params.email}`;
   }
 
   private static generateBase64QRCode(link: string): string {
