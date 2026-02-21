@@ -710,13 +710,26 @@ private async checkServiceBandwidth(
         }
       } else {
         // Normal case - just update the session usage
-        await db.query(
-          `UPDATE user_configs 
-           SET last_session_usage = $1,
-               updated_at = NOW()
-           WHERE id = $2`,
-          [currentSessionGB, service.id]
-        );
+        // await db.query(
+        //   `UPDATE user_configs 
+        //    SET last_session_usage = $1,
+        //        updated_at = NOW()
+        //    WHERE id = $2`,
+        //   [currentSessionGB, service.id]
+        // );
+
+         const additionalGB = currentSessionGB - lastSessionGB;
+  const newTotalGB = storedTotalGB + additionalGB;
+  
+  await db.query(
+    `UPDATE user_configs 
+     SET data_used_gb = $1,
+         last_session_usage = $2,
+         updated_at = NOW()
+     WHERE id = $3`,
+    [newTotalGB, currentSessionGB, service.id]
+  );
+  
       }
     }
 
