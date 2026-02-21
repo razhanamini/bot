@@ -452,14 +452,72 @@ static paymentVerificationRequired(payment: any, user: any): string {
 //     return message;
 //   }
 
-static userServices(services: any[]): string {
+// static userServices(services: any[]): string[]|string {
+//   if (services.length === 0) {
+//     return this.noActiveConfigs();
+//   }
+
+//   let message = `📋 خلاصه سرویس‌های شما\n\n`;
+
+//   // Count by status
+//   const activeCount = services.filter(s => s.status === 'active').length;
+//   const testCount = services.filter(s => s.status === 'test').length;
+//   const suspendedCount = services.filter(s => s.status === 'suspended').length;
+//   const expiredCount = services.filter(s => s.status === 'expired').length;
+
+//   const totalDataUsed = services.reduce(
+//     (sum, s) => sum + parseFloat(s.data_used_gb || 0),
+//     0
+//   );
+
+//   message += `✅ فعال: ${activeCount}\n`;
+//   message += `🧪 تست: ${testCount}\n`;
+//   message += `⏸️ معلق: ${suspendedCount}\n`;
+//   message += `⏰ منقضی شده: ${expiredCount}\n\n`;
+
+//   message += `💾 کل مصرف دیتا: ${totalDataUsed.toFixed(2)} GB\n\n`;
+
+//   // List active services only (for compact view)
+//   const activeServices = services.filter(
+//     s => s.status === 'active' || s.status === 'test'
+//   );
+
+//   if (activeServices.length > 0) {
+//     message += `📡 سرویس‌های فعال:\n`;
+
+//     activeServices.forEach((service, index) => {
+//       const dataUsed = parseFloat(service.data_used_gb || 0).toFixed(2);
+
+//       const dataLimit = service.data_limit_gb
+//         ? `${service.data_limit_gb.toString()} GB`
+//         : 'نامحدود';
+
+//       const remainingDays = Math.ceil(
+//         (new Date(service.expires_at).getTime() - Date.now()) /
+//           (1000 * 60 * 60 * 24)
+//       );
+
+//       const serviceName = service.service_name || 'سرویس';
+
+//       message += `\n${index + 1}. ${serviceName}\n`;
+//       message += `   📊 ${dataUsed} GB / ${dataLimit}\n`;
+//       message += `   ⏰ ${remainingDays} روز باقی مانده\n`;
+//     });
+//   }
+
+//   message +=
+//     '\n💡 برای مشاهده جزئیات کامل همه سرویس‌ها از سرویس های من استفاده کنید';
+
+//   return message;
+// }
+static userServices(services: any[]): string[] {
   if (services.length === 0) {
-    return this.noActiveConfigs();
+    return [this.noActiveConfigs()];
   }
 
-  let message = `📋 خلاصه سرویس‌های شما\n\n`;
+  const messages: string[] = [];
 
-  // Count by status
+  // ===== Summary Message =====
   const activeCount = services.filter(s => s.status === 'active').length;
   const testCount = services.filter(s => s.status === 'test').length;
   const suspendedCount = services.filter(s => s.status === 'suspended').length;
@@ -470,45 +528,44 @@ static userServices(services: any[]): string {
     0
   );
 
-  message += `✅ فعال: ${activeCount}\n`;
-  message += `🧪 تست: ${testCount}\n`;
-  message += `⏸️ معلق: ${suspendedCount}\n`;
-  message += `⏰ منقضی شده: ${expiredCount}\n\n`;
+  let summary = `📋 خلاصه سرویس‌های شما\n\n`;
+  summary += `✅ فعال: ${activeCount}\n`;
+  summary += `🧪 تست: ${testCount}\n`;
+  summary += `⏸️ معلق: ${suspendedCount}\n`;
+  summary += `⏰ منقضی شده: ${expiredCount}\n\n`;
+  summary += `💾 کل مصرف دیتا: ${totalDataUsed.toFixed(2)} GB`;
 
-  message += `💾 کل مصرف دیتا: ${totalDataUsed.toFixed(2)} GB\n\n`;
+  messages.push(summary);
 
-  // List active services only (for compact view)
-  const activeServices = services.filter(
-    s => s.status === 'active' || s.status === 'test'
-  );
+  // ===== Individual Service Messages =====
+  services.forEach((service, index) => {
+    const dataUsed = parseFloat(service.data_used_gb || 0).toFixed(2);
 
-  if (activeServices.length > 0) {
-    message += `📡 سرویس‌های فعال:\n`;
+    const dataLimit = service.data_limit_gb
+      ? `${service.data_limit_gb.toString()} GB`
+      : 'نامحدود';
 
-    activeServices.forEach((service, index) => {
-      const dataUsed = parseFloat(service.data_used_gb || 0).toFixed(2);
+    const remainingDays = Math.ceil(
+      (new Date(service.expires_at).getTime() - Date.now()) /
+        (1000 * 60 * 60 * 24)
+    );
 
-      const dataLimit = service.data_limit_gb
-        ? `${service.data_limit_gb.toString()} GB`
-        : 'نامحدود';
+    const serviceName = service.service_name || 'سرویس';
 
-      const remainingDays = Math.ceil(
-        (new Date(service.expires_at).getTime() - Date.now()) /
-          (1000 * 60 * 60 * 24)
-      );
+    let serviceMessage = `📡 سرویس ${index + 1}\n\n`;
+    serviceMessage += `🔹 نام: ${serviceName}\n`;
+    serviceMessage += `📊 مصرف: ${dataUsed} GB / ${dataLimit}\n`;
+    serviceMessage += `📅 وضعیت: ${service.status}\n`;
+    serviceMessage += `⏰ ${remainingDays} روز باقی مانده\n`;
 
-      const serviceName = service.service_name || 'سرویس';
+    if (service.client_email) {
+      serviceMessage += `📧 کاربر: ${service.client_email}\n`;
+    }
 
-      message += `\n${index + 1}. ${serviceName}\n`;
-      message += `   📊 ${dataUsed} GB / ${dataLimit}\n`;
-      message += `   ⏰ ${remainingDays} روز باقی مانده\n`;
-    });
-  }
+    messages.push(serviceMessage);
+  });
 
-  message +=
-    '\n💡 برای مشاهده جزئیات کامل همه سرویس‌ها از سرویس های من استفاده کنید';
-
-  return message;
+  return messages;
 }
 
   // Detailed view with service IDs for support reference

@@ -263,8 +263,16 @@ async handleCancelGift(ctx: any) {
       return;
     }
 
-    const message = BotMessages.userServices(userServices);
-    await ctx.reply(this.escapeMarkdown(message), { parse_mode: 'MarkdownV2' });
+    // const message = BotMessages.userServices(userServices);
+    // await ctx.reply(this.escapeMarkdown(message), { parse_mode: 'MarkdownV2' });
+    const messages = BotMessages.userServices(userServices);
+
+for (const message of messages) {
+  await ctx.reply(
+    this.escapeMarkdown(message),
+    { parse_mode: 'MarkdownV2' }
+  );
+}
   }
 
   async handleTestConfig(ctx: Context) {

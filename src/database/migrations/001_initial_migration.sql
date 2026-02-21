@@ -122,7 +122,7 @@ CREATE TABLE user_configs (
     client_email VARCHAR(255),
     inbound_tag VARCHAR(100),
     data_limit_gb DECIMAL(10, 2),
-    
+    last_session_usage DECIMAL(10, 2) NOT NULL DEFAULT 0.00, 
     -- Additional config info
     port INTEGER,
     protocol VARCHAR(50) DEFAULT 'vless',
