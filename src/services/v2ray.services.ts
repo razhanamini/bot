@@ -18,6 +18,7 @@ import {
 } from '../types/v2ray.type';
 import { VlessLinkGenerator } from '../types/v2ray.links';
 
+const MAX_DELTA_PER_MINUTE_GB = 1; // no user can use more than 1GB/min realistically
 
 dotenv.config();
 
@@ -772,6 +773,12 @@ export class V2RayService {
         ? currentSessionGB          // restart: count only what's used since reset
         : currentSessionGB - lastSessionGB; // normal: count the difference
 
+        if (deltaGB > MAX_DELTA_PER_MINUTE_GB) {
+  console.error(`Suspicious delta for ${userEmail}: deltaGB=${deltaGB}, currentSessionGB=${currentSessionGB}, lastSessionGB=${lastSessionGB} — skipping update`);
+  return;
+}
+
+console.log(`for user ${userEmail}: lastSessionUsage updated to: ${lastSessionGB}, data_used_gb set to: ${deltaGB+storedTotalGB}`);
       await db.query(
         `UPDATE user_configs 
        SET data_used_gb    = data_used_gb + $1,
