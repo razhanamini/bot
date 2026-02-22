@@ -363,7 +363,7 @@ for (const message of messages) {
     const messages = BotMessages.userConfigs(configs);
 
 for (const msg of messages) {
-  await ctx.sendMessage(msg, { parse_mode: 'MarkdownV2' });
+  await ctx.sendMessage(this.escapeMarkdown(msg), { parse_mode: 'MarkdownV2' });
 }
 
   }
