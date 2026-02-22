@@ -324,7 +324,7 @@ for (const message of messages) {
       await db.query(
         `UPDATE user_configs 
        SET status = 'test', 
-           data_limit_gb = 0.2,
+           data_limit_gb = 1.00,
            updated_at = NOW() 
        WHERE client_email = $1 AND status = 'active'`,
         [params.userEmail]
