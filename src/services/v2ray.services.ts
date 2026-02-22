@@ -769,16 +769,23 @@ export class V2RayService {
       const storedTotalGB = parseFloat(result.rows[0].data_used_gb) || 0;
       const lastSessionGB = parseFloat(result.rows[0].last_session_usage) || 0;
 
-      const deltaGB = currentSessionGB < lastSessionGB
-        ? currentSessionGB          // restart: count only what's used since reset
-        : currentSessionGB - lastSessionGB; // normal: count the difference
+      const RESTART_THRESHOLD_GB = 0.01; // if drop is less than 10MB, it's just noise
 
-        if (deltaGB > MAX_DELTA_PER_MINUTE_GB) {
-  console.error(`Suspicious delta for ${userEmail}: deltaGB=${deltaGB}, currentSessionGB=${currentSessionGB}, lastSessionGB=${lastSessionGB} — skipping update`);
-  return;
-}
+      const dropped = lastSessionGB - currentSessionGB;
+      const isRestart = dropped > RESTART_THRESHOLD_GB;
 
-console.log(`for user ${userEmail}: \nDelte is: ${deltaGB} \nlastSessionUsage updated to: ${currentSessionGB}, \ndata_used_gb set to: ${deltaGB+storedTotalGB}  \nlast_sessionusage was: ${lastSessionGB}`);
+      // const deltaGB = currentSessionGB < lastSessionGB
+      //   ? currentSessionGB          // restart: count only what's used since reset
+      //   : currentSessionGB - lastSessionGB; // normal: count the difference
+const deltaGB = isRestart
+  ? currentSessionGB        // genuine restart
+  : Math.max(0, currentSessionGB - lastSessionGB); // normal, floor at 0 to handle noise
+      if (deltaGB > MAX_DELTA_PER_MINUTE_GB) {
+        console.error(`Suspicious delta for ${userEmail}: deltaGB=${deltaGB}, currentSessionGB=${currentSessionGB}, lastSessionGB=${lastSessionGB} — skipping update`);
+        return;
+      }
+
+      console.log(`for user ${userEmail}: \nDelte is: ${deltaGB} \nlastSessionUsage updated to: ${currentSessionGB}, \ndata_used_gb set to: ${deltaGB + storedTotalGB}  \nlast_sessionusage was: ${lastSessionGB}`);
       await db.query(
         `UPDATE user_configs 
        SET data_used_gb    = data_used_gb + $1,
