@@ -778,7 +778,7 @@ export class V2RayService {
   return;
 }
 
-console.log(`for user ${userEmail}: lastSessionUsage updated to: ${lastSessionGB}, data_used_gb set to: ${deltaGB+storedTotalGB}`);
+console.log(`for user ${userEmail}: lastSessionUsage updated to: ${currentSessionGB}, data_used_gb set to: ${deltaGB+storedTotalGB} && last_sessionusage was: ${lastSessionGB}`);
       await db.query(
         `UPDATE user_configs 
        SET data_used_gb    = data_used_gb + $1,
