@@ -151,7 +151,48 @@ return `📭 *شما هیچ کانفیگ فعالی ندارید\\.*
 
 //   return message;
 // }
-static userConfigs(configs: UserConfig[]): string[] {
+// static userConfigs(configs: UserConfig[]): string[] {
+//   const messages: string[] = [];
+
+//   configs.forEach((config) => {
+//     let message = `📋 سرویس فعال شما\n\n`;
+
+//     const expiresDate = new Date(config.expires_at).toLocaleDateString();
+//     const remainingDays = Math.ceil(
+//       (new Date(config.expires_at).getTime() - Date.now()) /
+//       (1000 * 60 * 60 * 24)
+//     );
+
+//     const dataUsed = Math.floor(config.data_used_gb || 0);
+
+//     const vlessLinks = config.vless_link
+//       ? config.vless_link.split(',')
+//       : [];
+
+//     const platforms = ['Android', 'iOS', 'Windows', 'Linux', 'macOS', 'Standard'];
+
+//     message += `شناسه سرویس: ${config.service_id}\n`;
+//     message += `وضعیت: ${config.status}\n`;
+//     message += `تاریخ انقضا: ${expiresDate} (${remainingDays} روز باقی‌مانده)\n`;
+//     message += `میزان مصرف: ${dataUsed} گیگابایت\n\n`;
+
+//     message += `لینک‌های اتصال:\n`;
+
+//     vlessLinks.forEach((link, linkIndex) => {
+//       const platform = platforms[linkIndex] || `Link ${linkIndex + 1}`;
+//       message += `\n${platform}\n${link.trim()}\n`;
+//     });
+
+//     messages.push(message.trim());
+//   });
+
+//   return messages;
+// }
+
+static userConfigs(
+  configs: UserConfig[],
+  escapeMarkdown: (text: string) => string
+): string[] {
   const messages: string[] = [];
 
   configs.forEach((config) => {
@@ -171,16 +212,20 @@ static userConfigs(configs: UserConfig[]): string[] {
 
     const platforms = ['Android', 'iOS', 'Windows', 'Linux', 'macOS', 'Standard'];
 
-    message += `شناسه سرویس: ${config.service_id}\n`;
-    message += `وضعیت: ${config.status}\n`;
-    message += `تاریخ انقضا: ${expiresDate} (${remainingDays} روز باقی‌مانده)\n`;
+    message += `شناسه سرویس: ${escapeMarkdown(String(config.service_id))}\n`;
+    message += `وضعیت: ${escapeMarkdown(config.status)}\n`;
+    message += `تاریخ انقضا: ${escapeMarkdown(expiresDate)} (${remainingDays} روز باقی‌مانده)\n`;
     message += `میزان مصرف: ${dataUsed} گیگابایت\n\n`;
 
     message += `لینک‌های اتصال:\n`;
 
     vlessLinks.forEach((link, linkIndex) => {
       const platform = platforms[linkIndex] || `Link ${linkIndex + 1}`;
-      message += `\n${platform}\n${link.trim()}\n`;
+
+      const safePlatform = escapeMarkdown(platform);
+      const safeLink = escapeMarkdown(link.trim());
+
+      message += `\n${safePlatform}\n\`${safeLink}\`\n`;
     });
 
     messages.push(message.trim());
@@ -188,6 +233,7 @@ static userConfigs(configs: UserConfig[]): string[] {
 
   return messages;
 }
+
 
 
   // Already used test config

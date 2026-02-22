@@ -360,11 +360,13 @@ for (const message of messages) {
     //   BotMessages.userConfigs(configs),
     //   { parse_mode: 'MarkdownV2' }
     // );
-    const messages = BotMessages.userConfigs(configs);
+    const messages = BotMessages.userConfigs(configs, this.escapeMarkdown);
 
 for (const msg of messages) {
-  await ctx.sendMessage(this.escapeMarkdown(msg), { parse_mode: 'MarkdownV2' });
+  await ctx.sendMessage(msg, { parse_mode: 'MarkdownV2' });
 }
+
+
 
   }
 
