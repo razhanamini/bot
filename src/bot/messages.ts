@@ -214,7 +214,7 @@ static userConfigs(
 
     message += `شناسه سرویس: ${escapeMarkdown(String(config.service_id))}\n`;
     message += `وضعیت: ${escapeMarkdown(config.status)}\n`;
-    message += `تاریخ انقضا: ${escapeMarkdown(expiresDate)} ${remainingDays} روز باقی‌مانده)n`;
+    message += `تاریخ انقضا: ${escapeMarkdown(expiresDate)} ${remainingDays} روز باقی‌مانده\n`;
     message += `میزان مصرف: ${escapeMarkdown(dataUsed.toString())} گیگابایت\n\n`;
 
     message += `لینک‌های اتصال:\n`;
