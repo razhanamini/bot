@@ -785,7 +785,7 @@ const deltaGB = isRestart
         return;
       }
 
-      console.log(`for user ${userEmail}: \nDelte is: ${deltaGB} \nlastSessionUsage updated to: ${currentSessionGB}, \ndata_used_gb set to: ${deltaGB + storedTotalGB}  \nlast_sessionusage was: ${lastSessionGB}`);
+      console.log(`\nfor user ${userEmail}: \nDelte is: ${deltaGB} \nlastSessionUsage updated to: ${currentSessionGB}, \ndata_used_gb set to: ${deltaGB + storedTotalGB}  \nlast_sessionusage was: ${lastSessionGB}`);
       await db.query(
         `UPDATE user_configs 
        SET data_used_gb    = data_used_gb + $1,
