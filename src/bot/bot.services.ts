@@ -14,7 +14,8 @@ const PERSIAN_BUTTONS = {
   MY_ACCOUNT: '👤 حساب من',
   SUPPORT: '🆘 پشتیبانی',
   MY_CONFIGS: '📡 کانفیگ های من',
-  GIFT_CODE: '🎁 کد هدیه'  // Add this line
+  GIFT_CODE: '🎁 کد هدیه',  // Add this line
+  TRUST: '🤝 رضایت مشتری و اموزش'
 } as const;
 
 export class BotService {
@@ -81,7 +82,9 @@ export class BotService {
     this.bot.command('support', (ctx) => this.handleSupport(ctx));
     this.bot.command('how_to_use', (ctx) => this.handleHowToUse(ctx));
     this.bot.command('test_config', (ctx) => this.handleTestConfig(ctx)); // ✅ Fixed: changed from 'test_service' to 'test_config'
-      this.bot.command('gift', (ctx) => this.handleGiftCode(ctx)); // Also add as command
+    this.bot.command('gift', (ctx) => this.handleGiftCode(ctx)); // Also add as command
+    this.bot.command('trust', (ctx) => this.handleTrust(ctx)); 
+
 
 
     // Map Persian text to handlers
@@ -93,6 +96,8 @@ export class BotService {
     this.bot.hears(PERSIAN_BUTTONS.SUPPORT, (ctx) => this.handleSupport(ctx));
     this.bot.hears(PERSIAN_BUTTONS.MY_CONFIGS, (ctx) => this.handleMyConfigs(ctx));
   this.bot.hears(PERSIAN_BUTTONS.GIFT_CODE, (ctx) => this.handleGiftCode(ctx));
+    this.bot.hears(PERSIAN_BUTTONS.TRUST, (ctx) => this.handleTrust(ctx));
+
 
   }
 
@@ -114,6 +119,15 @@ this.bot.action('cancel_gift', async (ctx) => this.handleCancelGift(ctx));
   }
 
 
+async handleTrust(ctx: any) {
+  const rawMessage = BotMessages.TrustMessage();
+  const escaped = this.escapeMarkdown(rawMessage);
+
+  await ctx.sendMessage(
+    `*${escaped}*`,
+    { parse_mode: 'MarkdownV2' }
+  );
+}
 
 
 async handleRedeemGift(ctx: any) {
@@ -183,7 +197,8 @@ async handleCancelGift(ctx: any) {
         [PERSIAN_BUTTONS.BUY, PERSIAN_BUTTONS.MY_SERVICES],
         [PERSIAN_BUTTONS.TEST_CONFIG, PERSIAN_BUTTONS.ADD_FUNDS],
         [PERSIAN_BUTTONS.MY_ACCOUNT, PERSIAN_BUTTONS.SUPPORT],
-        [PERSIAN_BUTTONS.MY_CONFIGS, PERSIAN_BUTTONS.GIFT_CODE]
+        [PERSIAN_BUTTONS.MY_CONFIGS, PERSIAN_BUTTONS.GIFT_CODE],
+        [PERSIAN_BUTTONS.TRUST]
       ]).resize()
     });
 
