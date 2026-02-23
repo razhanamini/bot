@@ -23,7 +23,7 @@ static TrustMessage(): string {
 📚 همراه با آموزش استفاده از کانفیگ‌ها داخل کانال
 
 🚀 همین حالا عضو شوید:
-@v2chainc`;
+@v2chain_channel`;
 }
 
 
