@@ -143,6 +143,7 @@ export interface ServiceCreateParams {
   durationDays: number;
   dataLimitGB?: number;
   port?: number;
+  configName: string;
 }
 
 export interface ServiceMonitorResult {
@@ -177,6 +178,7 @@ export interface Server {
     updated_at: Date;
     last_checked_at?: Date;
     is_active: boolean;
+    config_format: string;
 }
 
 export interface VlessLinkParams {

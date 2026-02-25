@@ -66,7 +66,7 @@ export class V2RayService {
 
   // ================ SERVER SELECTION ================
 
-  async selectOptimalServer(): Promise<Server> {
+  async selectAllServers(): Promise<Server[]> {
     console.log('🖥️ Selecting optimal server for new user...');
 
     const availableServers = await db.getAvailableServers();
@@ -76,12 +76,12 @@ export class V2RayService {
     }
 
     // Select server with least current users (load balancing)
-    const selectedServer = availableServers[0];
+    // const selectedServer = availableServers[0];
 
-    console.log(`✅ Selected server: ${selectedServer.name} (${selectedServer.location})`);
-    console.log(`📊 Current usage: ${selectedServer.current_users}/${selectedServer.max_users} users`);
+    // console.log(`✅ Selected server: ${selectedServer.name} (${selectedServer.location})`);
+    // console.log(`📊 Current usage: ${selectedServer.current_users}/${selectedServer.max_users} users`);
 
-    return selectedServer;
+    return availableServers;
   }
 
   async selectOptimalTestServer(): Promise<Server> {
@@ -216,89 +216,58 @@ export class V2RayService {
 
   // ================ SERVICE CREATION (MULTI-SERVER) ================
 
-  async createService(params: ServiceCreateParams, isTestService: boolean): Promise<{
+  async createService(params: ServiceCreateParams): Promise<{
     success: boolean;
-    links?: VlessLinkSet;
     message?: string;
-    server?: Server;
   }> {
     try {
       console.log(`🚀 Creating service for user ${params.userEmail}...`);
 
+      const servers = await this.selectAllServers();
+      if (servers.length === 0) throw new Error('No active servers available');
 
-      // 1. Select optimal server with capacity
-      // const serverNormal = await this.selectOptimalServer();
-      // const serverTest = await this.selectOptimalTestServer();
-      // const server = isTestService ? serverTest : serverNormal;
-      const server = isTestService
-        ? await this.selectOptimalTestServer()
-        : await this.selectOptimalServer();
-
-      // 2. Get current config from selected server
-      const config = await this.getConfig(server);
-
-      // 3. Find VLESS inbound
-      const vlessInbound = config.inbounds.find(inbound =>
-        inbound.protocol === 'vless'
-      );
-
-      if (!vlessInbound) {
-        throw new Error('No VLESS inbound found in configuration');
-      }
-
-      // Initialize clients array
-      if (!vlessInbound.settings.clients) {
-        vlessInbound.settings.clients = [];
-      }
-
-      // 4. Generate UUID and calculate expiry
+      // Generate ONE uuid for this user — same identity across all servers
       const uuid = uuidv4();
-
-
       const expireTime = Date.now() + (params.durationDays * 24 * 60 * 60 * 1000);
-
-
       const createdAt = new Date().toISOString();
 
-      // 5. Create new client
       const newClient: Client = {
         id: uuid,
         email: params.userEmail,
         flow: 'xtls-rprx-vision',
         limitIp: 0,
         totalGB: params.dataLimitGB?.toString(),
-        // expireTime: expireTime
-        expireTime:  expireTime,
+        expireTime: expireTime,
         createdAt: createdAt
       };
 
-      // 6. Add client to config
-      vlessInbound.settings.clients.push(newClient);
+      // Deploy to all servers concurrently and collect their links
+      const links = await Promise.all(servers.map(async server => {
+        const config = await this.getConfig(server);
 
-      // 7. Update config on server
-      await this.updateConfig(server, config);
+        config.inbounds[0].settings.clients?.push(newClient);
 
-      // 8. Restart service (don't throw on failure)
-      await this.restartService(server);
+        await this.updateConfig(server, config);
+        await this.restartService(server);
+        await db.incrementServerUsers(server.id);
 
-      // 9. Generate VLESS links for all platforms
-      const links = this.generateVlessLinks(server, vlessInbound, newClient);
-      const linksList = links.android + ',' + links.ios + ',' + links.linux + ',' + links.macos + ',' + links.standard + ',' + links.windows;
+        // Build this server's link correctly
+        const link = server.config_format
+          .replace('USER_UUID', uuid)
+          .replace('USER_EMAIL', params.configName);
 
-      // 10. Increment server user count
-      await db.incrementServerUsers(server.id);
+        console.log(`✅ Service created for user ${params.userEmail} on server ${server.name}`);
+        return link;
+      }));
 
-      // 11. Store in database with server reference
-      await this.storeUserConfigInDatabase(params, linksList, newClient, vlessInbound, server);
+      const linksList = links.join(',');
 
-      console.log(`✅ Service created for user ${params.userEmail} on server ${server.name}`);
-      console.log(`📊 Server ${server.name} now has ${server.current_users + 1}/${server.max_users} users`);
+      // Store ONE user_config row for this subscription
+      await this.storeUserConfigInDatabase(params, linksList, newClient);
 
       return {
         success: true,
-        links: links,
-        message: `Service created successfully on ${server.name}`,
-        server: server
+        message: `Service created successfully on ${servers.length} servers`,
       };
 
     } catch (error: any) {
@@ -315,8 +284,7 @@ export class V2RayService {
     params: ServiceCreateParams,
     vlessLink: string,
     client: Client,
-    inbound: any,
-    server: Server
+    server?: Server
   ): Promise<void> {
     try {
       // const expiresAt = new Date();
@@ -332,18 +300,18 @@ export class V2RayService {
         [
           params.userId,
           params.serviceId,
-          server.id,
+          9999,
           vlessLink,
           'active',
           expiresAt,
           0.00,
           client.email,
-          inbound.tag || 'vless-reality-inbound',
+          'vless-reality-inbound',
           params.dataLimitGB
         ]
       );
 
-      console.log(`✅ User config stored in database for server ${server.name}`);
+      console.log(`✅ User config stored in database`);
     } catch (error: any) {
       console.error('❌ Error storing user config in database:', error.message);
       throw error;
@@ -387,43 +355,48 @@ export class V2RayService {
 
   // ================ SERVICE REMOVAL ================
 
-  async removeUserFromConfig(userEmail: string, serverId: number): Promise<boolean> {
+  async removeUserFromAllServers(userEmail: string): Promise<boolean> {
     try {
-      const server = await db.getServerById(serverId);
-      if (!server) {
-        throw new Error(`Server ${serverId} not found`);
+      const servers = await db.getAllActiveServers();
+      if (servers.length === 0) throw new Error('No active servers found');
+
+      const results = await Promise.all(servers.map(async server => {
+        try {
+          const config = await this.getConfig(server);
+          const initialCount = config.inbounds[0].settings.clients?.length;
+
+          config.inbounds[0].settings.clients = config.inbounds[0].settings.clients?.filter(
+            (client: Client) => client.email !== userEmail
+          );
+
+          if (config.inbounds[0].settings.clients?.length === initialCount) {
+            console.log(`User ${userEmail} not found in config on server ${server.name}`);
+            return false;
+          }
+
+          await this.updateConfig(server, config);
+          await this.restartService(server);
+          await db.decrementServerUsers(server.id);
+
+          console.log(`✅ User ${userEmail} removed from server ${server.name}`);
+          return true;
+
+        } catch (error: any) {
+          // Don't let one server failure block removal from other servers
+          console.error(`❌ Failed to remove ${userEmail} from server ${server.name}:`, error.message);
+          return false;
+        }
+      }));
+
+      // Return true if removed from at least one server
+      const anySuccess = results.some(r => r === true);
+      if (!anySuccess) {
+        console.warn(`⚠️ User ${userEmail} was not found or removed from any server`);
       }
+      return anySuccess;
 
-      const config = await this.getConfig(server);
-
-      const vlessInbound = config.inbounds.find(inbound =>
-        inbound.protocol === 'vless'
-      );
-
-      if (!vlessInbound || !vlessInbound.settings.clients) {
-        throw new Error('No VLESS inbound found in configuration');
-      }
-
-      const initialCount = vlessInbound.settings.clients.length;
-      vlessInbound.settings.clients = vlessInbound.settings.clients.filter(
-        (client: Client) => client.email !== userEmail
-      );
-
-      if (vlessInbound.settings.clients.length === initialCount) {
-        console.log(`User ${userEmail} not found in config on server ${server.name}`);
-        return false;
-      }
-
-      await this.updateConfig(server, config);
-      await this.restartService(server);
-
-      // Decrement server user count
-      await db.decrementServerUsers(server.id);
-
-      console.log(`✅ User ${userEmail} removed from server ${server.name}`);
-      return true;
     } catch (error: any) {
-      console.error('Error removing user from config:', error.message);
+      console.error('Error removing user from all servers:', error.message);
       throw error;
     }
   }
@@ -452,9 +425,6 @@ export class V2RayService {
       const servers = await db.getAllActiveServers();
       console.log(`🔍 Checking ${servers.length} active servers...`);
 
-      // for (const server of servers) {
-      //   await this.checkServer(server);
-      // }
       await Promise.all(servers.map(s => this.checkServer(s)));
 
       // Update server statistics
@@ -479,20 +449,13 @@ export class V2RayService {
 
       // Update server user count based on actual config
       let userCount = 0;
-      if (status.isOk && status.data && status.data.users) {
-        userCount = status.data.users.length;
-      } else {
-        // Try to get config as fallback
-        try {
-          const config = await this.getConfig(server);
-          const vlessInbound = config.inbounds.find(i => i.protocol === 'vless');
-          if (vlessInbound && vlessInbound.settings.clients) {
-            userCount = vlessInbound.settings.clients.length;
-          }
-        } catch (configError) {
-          console.error(`⚠️ Could not get config from server ${server.name}`);
-        }
+      try {
+        const config = await this.getConfig(server);
+        userCount = config.inbounds[0].settings.clients?.length || 0;
+      } catch (configError) {
+        console.error(`⚠️ Could not get config from server ${server.name}`);
       }
+
 
       // Update server user count in database
       await db.updateServerCurrentUsers(server.id, userCount);
@@ -519,17 +482,17 @@ export class V2RayService {
       });
 
       // Get all active services on this server
-      const activeServices = await this.getActiveServicesOnServer(server.id);
+      const activeUserConfigs = await this.getAllActiveServices();
 
-      for (const service of activeServices) {
-        await this.checkServiceBandwidth(service, bandwidthMap);
+      for (const config of activeUserConfigs) {
+        await this.checkServiceBandwidth(config, bandwidthMap, server.id);
       }
     } catch (error: any) {
       console.error(`Error checking bandwidth on server ${server.name}:`, error.message);
     }
   }
 
-  private async getActiveServicesOnServer(serverId: number): Promise<any[]> {
+  private async getAllActiveServices(): Promise<any[]> {
     try {
       const result = await db.query(
         `SELECT 
@@ -540,8 +503,8 @@ export class V2RayService {
         FROM user_configs uc
         JOIN users u ON uc.user_id = u.id
         LEFT JOIN services s ON uc.service_id = s.id
-        WHERE uc.server_id = $1 AND uc.status IN ('active', 'test')`,
-        [serverId]
+        WHERE uc.status IN ('active', 'test')`,
+
       );
       return result.rows;
     } catch (error: any) {
@@ -550,256 +513,95 @@ export class V2RayService {
     }
   }
 
-  // private async checkServiceBandwidth(service: any, bandwidthMap: Map<string, UserBandwidth>): Promise<void> {
-  //   try {
-  //     const userEmail = service.client_email;
-  //     const bandwidth = bandwidthMap.get(userEmail);
-
-  //     if (bandwidth) {
-  //       const usedGB = (bandwidth.uplink + bandwidth.downlink) / 1073741824;
-  //       const totalGB = service.data_limit_gb;
-
-  //       // Update usage in database
-  //       await db.query(
-  //         'UPDATE user_configs SET data_used_gb = $1, updated_at = NOW() WHERE id = $2',
-  //         [usedGB, service.id]
-  //       );
-
-  //       // Check if data limit reached
-  //       if (totalGB && usedGB >= totalGB) {
-  //         console.log(`⚠️ Data limit reached for user ${service.user_id} on server ${service.server_id}`);
-  //         await this.handleDataLimitReached(service);
-  //       }
-  //     }
-
-
-  //     // Check if expired
-  //     const now = new Date();
-  //     const expiresAt = new Date(service.expires_at);
-  //     if (expiresAt < now) {
-  //       console.log(`⚠️ Service expired for user ${service.user_id} on server ${service.server_id}`);
-  //       await this.handleServiceExpired(service);
-  //     }
-  //   } catch (error: any) {
-  //     console.error(`Error checking service ${service.id}:`, error.message);
-  //   }
-  // }
-  //   private async checkServiceBandwidth(
-  //   service: any,
-  //   bandwidthMap: Map<string, UserBandwidth>
-  // ): Promise<void> {
-  //   try {
-  //     const userEmail = service.client_email;
-  //     const bandwidth = bandwidthMap.get(userEmail);
-
-  //     if (bandwidth) {
-  //       const currentUsedGB =
-  //         (bandwidth.uplink + bandwidth.downlink) / 1073741824;
-
-  //       const totalGB = service.data_limit_gb;
-
-  //       // Get current stored usage from DB
-  //       const result = await db.query(
-  //         'SELECT data_used_gb FROM user_configs WHERE id = $1',
-  //         [service.id]
-  //       );
-
-  //       if (result.rowCount === 0) {
-  //         console.warn(`Service config not found for id ${service.id}`);
-  //         return;
-  //       }
-
-  //       const storedUsedGB = parseFloat(result.rows[0].data_used_gb) || 0;
-
-  //       // Prevent decreasing usage (handles server restart reset)
-  //       const newUsedGB =
-  //         currentUsedGB > storedUsedGB ? currentUsedGB : storedUsedGB;
-
-  //       // Update only if changed
-  //       if (newUsedGB !== storedUsedGB) {
-  //         await db.query(
-  //           `UPDATE user_configs 
-  //            SET data_used_gb = $1, updated_at = NOW() 
-  //            WHERE id = $2`,
-  //           [newUsedGB, service.id]
-  //         );
-  //       }
-
-  //       // Check limit against the PERSISTED value
-  //       if (
-  //         totalGB !== null &&
-  //         totalGB !== undefined &&
-  //         newUsedGB >= totalGB
-  //       ) {
-  //         console.log(
-  //           `⚠️ Data limit reached for user ${service.user_id} on server ${service.server_id}`
-  //         );
-  //         await this.handleDataLimitReached(service);
-  //       }
-  //     }
-
-  //     // Check expiration
-  //     const now = new Date();
-  //     const expiresAt = new Date(service.expires_at);
-
-  //     if (expiresAt < now) {
-  //       console.log(
-  //         `⚠️ Service expired for user ${service.user_id} on server ${service.server_id}`
-  //       );
-  //       await this.handleServiceExpired(service);
-  //     }
-  //   } catch (error: any) {
-  //     console.error(
-  //       `Error checking service ${service.id}:`,
-  //       error.message
-  //     );
-  //   }
-  // }
-
-  // private async checkServiceBandwidth(
-  //   service: any,
-  //   bandwidthMap: Map<string, UserBandwidth>
-  // ): Promise<void> {
-  //   try {
-  //     const userEmail = service.client_email;
-  //     const bandwidth = bandwidthMap.get(userEmail);
-
-  //     if (bandwidth) {
-  //       const currentSessionGB = (bandwidth.uplink + bandwidth.downlink) / 1073741824;
-  //       const totalGB = service.data_limit_gb;
-
-  //       // Get current stored total from DB
-  //       const result = await db.query(
-  //         'SELECT data_used_gb FROM user_configs WHERE id = $1',
-  //         [service.id]
-  //       );
-
-  //       if (result.rowCount === 0) {
-  //         console.warn(`Service config not found for id ${service.id}`);
-  //         return;
-  //       }
-
-  //       const storedTotalGB = parseFloat(result.rows[0].data_used_gb) || 0;
-
-  //       // Get last session usage to detect resets
-  //       const lastSessionResult = await db.query(
-  //         'SELECT last_session_usage FROM user_configs WHERE id = $1',
-  //         [service.id]
-  //       );
-
-  //       const lastSessionGB = parseFloat(lastSessionResult.rows[0]?.last_session_usage) || 0;
-
-  //       // If current session is less than last session, server restarted
-  //       if (currentSessionGB < lastSessionGB) {
-  //         // Server restarted - add the previous session to total
-  //         // bug: duplicately adds the last session while it should add the current session data amount
-  //         const newTotalGB = storedTotalGB + lastSessionGB;
-
-  //         await db.query(
-  //           `UPDATE user_configs 
-  //            SET data_used_gb = $1,
-  //                last_session_usage = $2,
-  //                updated_at = NOW()
-  //            WHERE id = $3`,
-  //           [newTotalGB, currentSessionGB, service.id]
-  //         );
-
-  //         // Check limit against new total
-  //         if (totalGB && newTotalGB >= totalGB) {
-  //           await this.handleDataLimitReached(service);
-  //         }
-  //       } else {
-  //         // Normal case - just update the session usage
-  //         // await db.query(
-  //         //   `UPDATE user_configs 
-  //         //    SET last_session_usage = $1,
-  //         //        updated_at = NOW()
-  //         //    WHERE id = $2`,
-  //         //   [currentSessionGB, service.id]
-  //         // );
-
-  //          const additionalGB = currentSessionGB - lastSessionGB;
-  //   const newTotalGB = storedTotalGB + additionalGB;
-
-  //   await db.query(
-  //     `UPDATE user_configs 
-  //      SET data_used_gb = $1,
-  //          last_session_usage = $2,
-  //          updated_at = NOW()
-  //      WHERE id = $3`,
-  //     [newTotalGB, currentSessionGB, service.id]
-  //   );
-
-  //       }
-  //     }
-
-  //     // Check expiration
-  //     const now = new Date();
-  //     const expiresAt = new Date(service.expires_at);
-  //     if (expiresAt < now) {
-  //       await this.handleServiceExpired(service);
-  //     }
-  //   } catch (error: any) {
-  //     console.error(`Error checking service ${service.id}:`, error.message);
-  //   }
-  // }
-
   private async checkServiceBandwidth(
     service: any,
-    bandwidthMap: Map<string, UserBandwidth>
+    bandwidthMap: Map<string, UserBandwidth>,
+    serverId: number
   ): Promise<void> {
     try {
       const userEmail = service.client_email;
       const bandwidth = bandwidthMap.get(userEmail);
-      if (!bandwidth) {return};
+      if (!bandwidth) {
+
+        if (new Date(service.expires_at) < new Date()) {
+          await this.handleServiceExpired(service);
+        }
+        return
+      };
 
       const currentSessionGB = (bandwidth.uplink + bandwidth.downlink) / 1073741824;
 
-      const result = await db.query(
-        'SELECT data_used_gb, last_session_usage FROM user_configs WHERE id = $1',
-        [service.id]
+      // Look up last known session for this specific user+server pair
+      const sessionResult = await db.query(
+        `SELECT last_session_gb FROM user_server_sessions
+       WHERE user_config_id = $1 AND server_id = $2`,
+        [service.id, serverId]
       );
-      if (result.rowCount === 0) {
+
+      if (sessionResult.rowCount === 0) {
         console.warn(`Service config not found for id ${service.id}`);
         return;
       }
 
-      const storedTotalGB = parseFloat(result.rows[0].data_used_gb) || 0;
-      const lastSessionGB = parseFloat(result.rows[0].last_session_usage) || 0;
+      const lastSessionGB = sessionResult.rowCount! > 0
+        ? parseFloat(sessionResult.rows[0].last_session_gb) || 0
+        : 0;
 
-      const RESTART_THRESHOLD_GB = 0.01; // if drop is less than 10MB, it's just noise
 
+      const RESTART_THRESHOLD_GB = 0.01;
       const dropped = lastSessionGB - currentSessionGB;
       const isRestart = dropped > RESTART_THRESHOLD_GB;
 
-      // const deltaGB = currentSessionGB < lastSessionGB
-      //   ? currentSessionGB          // restart: count only what's used since reset
-      //   : currentSessionGB - lastSessionGB; // normal: count the difference
-const deltaGB = isRestart
-  ? currentSessionGB        // genuine restart
-  : Math.max(0, currentSessionGB - lastSessionGB); // normal, floor at 0 to handle noise
+      const deltaGB = isRestart
+        ? currentSessionGB
+        : Math.max(0, currentSessionGB - lastSessionGB);
+
+      // Always update the per-server session tracker regardless of delta
+      await db.query(
+        `INSERT INTO user_server_sessions (user_config_id, server_id, last_session_gb, updated_at)
+       VALUES ($1, $2, $3, NOW())
+       ON CONFLICT (user_config_id, server_id)
+       DO UPDATE SET last_session_gb = $3, updated_at = NOW()`,
+        [service.id, serverId, currentSessionGB]
+      );
+
+      if (deltaGB === 0) return;
+
       if (deltaGB > MAX_DELTA_PER_MINUTE_GB) {
-        console.error(`Suspicious delta for ${userEmail}: deltaGB=${deltaGB}, currentSessionGB=${currentSessionGB}, lastSessionGB=${lastSessionGB} — skipping update`);
+        console.error(
+          `Suspicious delta for ${userEmail} on server ${serverId}: ` +
+          `deltaGB=${deltaGB}, currentSessionGB=${currentSessionGB}, ` +
+          `lastSessionGB=${lastSessionGB} — skipping update`
+        );
         return;
       }
 
-      console.log(`\nfor user ${userEmail}: \nDelte is: ${deltaGB} \nlastSessionUsage updated to: ${currentSessionGB}, \ndata_used_gb set to: ${deltaGB + storedTotalGB}  \nlast_sessionusage was: ${lastSessionGB}`);
-      await db.query(
-        `UPDATE user_configs 
-       SET data_used_gb    = data_used_gb + $1,
-           last_session_usage = $2,
-           updated_at      = NOW()
-       WHERE id = $3`,
-        [deltaGB, currentSessionGB, service.id]
+
+      // Atomically add this server's delta to the user's running total
+      const updateResult = await db.query(
+        `UPDATE user_configs
+       SET data_used_gb = data_used_gb + $1,
+           updated_at   = NOW()
+       WHERE id = $2
+       RETURNING data_used_gb`,
+        [deltaGB, service.id]
       );
 
-      const newTotalGB = storedTotalGB + deltaGB;
+      const newTotalGB = parseFloat(updateResult.rows[0].data_used_gb);
+
+      console.log(
+        `\nfor user ${userEmail} on server ${serverId}:` +
+        `\nDelta: ${deltaGB}` +
+        `\ncurrentSession: ${currentSessionGB}` +
+        `\nlastSession: ${lastSessionGB}` +
+        `\ntotalUsed: ${newTotalGB}`
+      );
+
       if (service.data_limit_gb && newTotalGB >= service.data_limit_gb) {
         await this.handleDataLimitReached(service);
       }
 
-      const now = new Date();
-      if (new Date(service.expires_at) < now) {
+      if (new Date(service.expires_at) < new Date()) {
         await this.handleServiceExpired(service);
       }
 
@@ -810,7 +612,7 @@ const deltaGB = isRestart
 
   private async handleDataLimitReached(service: any): Promise<void> {
     try {
-      await this.removeUserFromConfig(service.client_email, service.server_id);
+      await this.removeUserFromAllServers(service.client_email);
 
       await db.query(
         'UPDATE user_configs SET status = $1, updated_at = NOW() WHERE id = $2',
@@ -831,7 +633,7 @@ const deltaGB = isRestart
 
   private async handleServiceExpired(service: any): Promise<void> {
     try {
-      await this.removeUserFromConfig(service.client_email, service.server_id);
+      await this.removeUserFromAllServers(service.client_email);
 
       await db.query(
         'UPDATE user_configs SET status = $1, updated_at = NOW() WHERE id = $2',

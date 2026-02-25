@@ -55,6 +55,10 @@ CREATE TABLE servers (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     last_checked_at TIMESTAMP WITH TIME ZONE,
     is_active BOOLEAN DEFAULT true,
+    config_format TEXT NOT NULL DEFAULT 
+    'vless://USER_UUID@de-v1-gwez.gemminie.xyz:8445?security=reality&sni=play.google.com&alpn=http/1.1&fp=chrome&pbk=Q23wpz9MPHfs3u3-VGM-6t_p9HEC3bIkGhHo2y1lJ2A&sid=6ba85179e30d4fc2&type=tcp&encryption=none#USER_EMAIL',
+
+    
     
     -- Server specifications
     cpu_cores INTEGER DEFAULT 2,
@@ -130,7 +134,7 @@ CREATE TABLE user_configs (
     network VARCHAR(50) DEFAULT 'tcp',
     last_connected_at TIMESTAMP WITH TIME ZONE,
     total_connections INTEGER DEFAULT 0,
-    
+
     -- Constraints
     CONSTRAINT check_status CHECK (status IN ('active', 'test', 'suspended', 'expired', 'cancelled')),
     CONSTRAINT check_data_used_positive CHECK (data_used_gb >= 0)
@@ -147,6 +151,22 @@ CREATE INDEX idx_user_configs_client_email ON user_configs(client_email);
 CREATE INDEX idx_user_configs_created_at ON user_configs(created_at);
 CREATE INDEX idx_user_configs_composite ON user_configs(user_id, status, expires_at);
 
+-- =====================================================
+-- user server session
+-- =====================================================
+CREATE TABLE user_server_sessions (
+  user_config_id  INTEGER NOT NULL REFERENCES user_configs(id) ON DELETE CASCADE,
+  server_id       INTEGER NOT NULL REFERENCES servers(id) ON DELETE CASCADE,
+  last_session_gb DECIMAL(15, 8) NOT NULL DEFAULT 0.00,
+  updated_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  PRIMARY KEY (user_config_id, server_id)
+);
+
+CREATE INDEX idx_user_server_sessions_user_config_id ON user_server_sessions(user_config_id);
+CREATE INDEX idx_user_server_sessions_server_id ON user_server_sessions(server_id);
+
+
+ALTER TABLE user_configs DROP COLUMN last_session_usage;
 -- =====================================================
 -- 5. PAYMENTS TABLE
 -- =====================================================

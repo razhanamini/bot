@@ -53,3 +53,13 @@ that function uses another method that works with the database which,
 the way we specify test servers is such that the servers that have the cpu_cores parameter
 in the database set to the specific number of 1111 are trated as test servers
 
+
+
+1. update craete service
+{
+  1. fetch all servers, all, no test separation
+  2. put user UUID and info on all server configs
+
+}
+do this in the database before restart:
+ALTER TABLE user_configs DROP COLUMN last_session_usage;
