@@ -62,4 +62,22 @@ in the database set to the specific number of 1111 are trated as test servers
 
 }
 do this in the database before restart:
+
 ALTER TABLE user_configs DROP COLUMN last_session_usage;
+ALTER TABLE user_configs ADD COLUMN sub_id VARCHAR(255) UNIQUE;
+
+
+-- 1. Drop server_id from user_configs
+ALTER TABLE user_configs DROP COLUMN server_id;
+
+-- 2. Add config_name with default random 8 char string for existing rows
+ALTER TABLE user_configs ADD COLUMN config_name VARCHAR(255);
+UPDATE user_configs SET config_name = substr(md5(random()::text), 1, 8) WHERE config_name IS NULL;
+ALTER TABLE user_configs ALTER COLUMN config_name SET NOT NULL;
+
+-- 3. Add sub_id defaulting to config_name + random 5 chars for existing rows
+ALTER TABLE user_configs ADD COLUMN sub_id VARCHAR(255);
+UPDATE user_configs SET sub_id = config_name || substr(md5(random()::text), 1, 5) WHERE sub_id IS NULL;
+ALTER TABLE user_configs ALTER COLUMN sub_id SET NOT NULL;
+ALTER TABLE user_configs ADD CONSTRAINT user_configs_sub_id_unique UNIQUE (sub_id);
+Run them in this order — sub_id references config_name so config_name must be populated first. After running, both columns will be non-null on all existing rows with the random defaults applied, and new rows will need to have these values explicitly set at insert time from your application code.

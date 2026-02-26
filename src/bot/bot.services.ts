@@ -4,6 +4,7 @@ import db from '../database/database.service';
 import { BotMessages } from './messages';
 import v2rayServices from '../services/v2ray.services';
 import QRCode from 'qrcode';
+import crypto from 'crypto';
 dotenv.config();
 
 
@@ -809,11 +810,11 @@ export class BotService {
         await db.updateUserBalance(user.id, -service.price);
         await ctx.reply(this.escapeMarkdown(BotMessages.purchaseSuccessful(service)), { parse_mode: 'MarkdownV2' });
       }
-
-      const subLinkMessage = BotMessages.subLinksMessage(userEmail);
+      const subId = configName + crypto.randomBytes(4).toString('hex');
+      const subLinkMessage = BotMessages.subLinksMessage(subId);
       await ctx.sendMessage(this.escapeMarkdown(subLinkMessage), { parse_mode: 'MarkdownV2' });
 
-      const qrBuffer = await BotMessages.getQrBuffer(userEmail);
+      const qrBuffer = await BotMessages.getQrBuffer(subId);
       await ctx.replyWithPhoto(
         { source: qrBuffer },
         { caption: 'می‌توانید QR کد را اسکن کنید تا لینک‌های خود را دریافت کنید' }

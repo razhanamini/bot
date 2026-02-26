@@ -219,7 +219,7 @@ export class BotMessages {
         ? config.vless_link.split(',')
         : [];
 
-      const platforms = ['Android', 'iOS', 'Windows', 'Linux', 'macOS', 'Standard'];
+      // const platforms = ['Android', 'iOS', 'Windows', 'Linux', 'macOS', 'Standard'];
 
       message += `شناسه سرویس: ${escapeMarkdown(String(config.service_id))}\n`;
       message += `وضعیت: ${escapeMarkdown(config.status)}\n`;
@@ -229,12 +229,14 @@ export class BotMessages {
       message += `لینک‌های اتصال:\n`;
 
       vlessLinks.forEach((link, linkIndex) => {
-        const platform = platforms[linkIndex] || `Link ${linkIndex + 1}`;
+        // const platform = platforms[linkIndex] || `Link ${linkIndex + 1}`;
 
-        const safePlatform = escapeMarkdown(platform);
+        // const safePlatform = escapeMarkdown(platform);
         const safeLink = escapeMarkdown(link.trim());
 
-        message += `\n${safePlatform}\n\`${safeLink}\`\n`;
+        // message += `\n${safePlatform}\n\`${safeLink}\`\n`;
+        message += `\n\`${safeLink}\`\n`;
+
       });
 
       messages.push(message.trim());
@@ -734,12 +736,12 @@ export class BotMessages {
 
 
   static serviceNamePrompt(): string {
-  return '✏️ *نام سرویس خود را انتخاب کنید*\n\nیک کلمه انگلیسی وارد کنید:\n(مثال: `myservice`)';
-}
+    return '✏️ *نام سرویس خود را انتخاب کنید*\n\nیک کلمه انگلیسی وارد کنید:\n(مثال: `myservice`)';
+  }
 
-static serviceNameInvalid(): string {
-  return '❌ نام باید فقط یک کلمه انگلیسی باشد، لطفاً دوباره امتحان کنید:';
-}
+  static serviceNameInvalid(): string {
+    return '❌ نام باید فقط یک کلمه انگلیسی باشد، لطفاً دوباره امتحان کنید:';
+  }
 
 
 }
