@@ -295,8 +295,8 @@ export class V2RayService {
       await db.query(
         `INSERT INTO user_configs (
           user_id, service_id, vless_link, status, expires_at,
-          data_used_gb, client_email, inbound_tag, data_limit_gb
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+          data_used_gb, client_email, inbound_tag, data_limit_gb, config_name
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
         [
           params.userId,
           params.serviceId,
@@ -306,7 +306,8 @@ export class V2RayService {
           0.00,
           client.email,
           'vless-reality-inbound',
-          params.dataLimitGB
+          params.dataLimitGB,
+          params.configName
         ]
       );
 
