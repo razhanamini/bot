@@ -116,7 +116,7 @@ CREATE TABLE user_configs (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     service_id INTEGER REFERENCES services(id) ON DELETE SET NULL,
-    server_id INTEGER REFERENCES servers(id) ON DELETE SET NULL,
+    -- server_id INTEGER REFERENCES servers(id) ON DELETE SET NULL,
     vless_link TEXT NOT NULL,
     status VARCHAR(50) DEFAULT 'active',
     expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -126,7 +126,10 @@ CREATE TABLE user_configs (
     client_email VARCHAR(255),
     inbound_tag VARCHAR(100),
     data_limit_gb DECIMAL(10, 2),
-    last_session_usage DECIMAL(10, 2) NOT NULL DEFAULT 0.00, 
+    -- last_session_usage DECIMAL(10, 2) NOT NULL DEFAULT 0.00, 
+    user_uuid VARCHAR(255),  -- newly added column
+    config_name VARCHAR(255) NOT NULL DEFAULT substr(md5(random()::text), 1, 8),
+    sub_id VARCHAR(255) NOT NULL UNIQUE,  -- subscription ID for /links/:subId endpoint
     -- Additional config info
     port INTEGER,
     protocol VARCHAR(50) DEFAULT 'vless',
@@ -383,11 +386,11 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Trigger for user added to server
-CREATE TRIGGER trigger_log_user_added
-    AFTER INSERT ON user_configs
-    FOR EACH ROW
-    WHEN (NEW.server_id IS NOT NULL)
-    EXECUTE FUNCTION log_server_event('user_added', 'User config created');
+-- CREATE TRIGGER trigger_log_user_added
+--     AFTER INSERT ON user_configs
+--     FOR EACH ROW
+--     WHEN (NEW.server_id IS NOT NULL)
+--     EXECUTE FUNCTION log_server_event('user_added', 'User config created');
 
 -- Trigger for user removed from server
 CREATE TRIGGER trigger_log_user_removed

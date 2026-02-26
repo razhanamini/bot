@@ -279,19 +279,30 @@ class DatabaseService {
 
 
 
-  async hasTestConfig(userId: number): Promise<boolean> {
-    const result = await this.query(
-      `SELECT EXISTS (
-       SELECT 1
-       FROM user_configs
-       WHERE user_id = $1
-         AND service_id = 1111
-     ) AS has_test`,
-      [userId]
-    );
+  // async hasTestConfig(userId: number): Promise<boolean> {
+  //   const result = await this.query(
+  //     `SELECT EXISTS (
+  //      SELECT 1
+  //      FROM user_configs
+  //      WHERE user_id = $1
+  //        AND service_id = 1111
+  //    ) AS has_test`,
+  //     [userId]
+  //   );
 
-    return result.rows[0].has_test;
-  }
+  //   return result.rows[0].has_test;
+  // }
+  async hasTestConfig(userId: number): Promise<boolean> {
+  const result = await this.query(
+    `SELECT has_test
+     FROM users
+     WHERE id = $1`,
+    [userId]
+  );
+
+  // If user doesn't exist, return false
+  return result.rows[0]?.has_test ?? false;
+}
 
   // Add to your database service class
 

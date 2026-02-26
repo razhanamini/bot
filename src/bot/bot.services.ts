@@ -782,7 +782,7 @@ export class BotService {
 
     try {
       await ctx.reply('🔄 در حال ساخت سرویس...', { parse_mode: 'Markdown' });
-   
+
       const userEmail = `${user.telegram_id}@v2ray.${pending.serviceId}.${Math.random().toString(8).substring(2)}`;
       const service = pending.isTest ? null : await db.getServiceById(pending.serviceId);
 
@@ -805,6 +805,20 @@ export class BotService {
          WHERE client_email = $1 AND status = 'active'`,
           [userEmail]
         );
+
+        await db.query(
+          `UPDATE users
+     SET has_test = true, updated_at = NOW()
+     WHERE id = (
+       SELECT user_id 
+       FROM user_configs 
+       WHERE client_email = $1
+       LIMIT 1
+     )`,
+          [userEmail]
+        );
+
+
         await ctx.reply(BotMessages.testConfigActivated(), { parse_mode: 'MarkdownV2' });
       } else {
         await db.updateUserBalance(user.id, -service.price);

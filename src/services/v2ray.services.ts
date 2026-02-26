@@ -532,20 +532,29 @@ export class V2RayService {
       const currentSessionGB = (bandwidth.uplink + bandwidth.downlink) / 1073741824;
 
       // Look up last known session for this specific user+server pair
+      // const sessionResult = await db.query(
+      //   `SELECT last_session_gb FROM user_server_sessions
+      //  WHERE user_config_id = $1 AND server_id = $2`,
+      //   [service.id, serverId]
+      // );
       const sessionResult = await db.query(
-        `SELECT last_session_gb FROM user_server_sessions
-       WHERE user_config_id = $1 AND server_id = $2`,
-        [service.id, serverId]
-      );
+  `SELECT last_session_gb FROM user_server_sessions
+   WHERE user_config_id = $1 AND server_id = $2`,
+  [service.id, serverId]
+);
 
-      if (sessionResult.rowCount === 0) {
-        console.warn(`Service config not found for id ${service.id}`);
-        return;
-      }
+      // if (sessionResult.rowCount === 0) {
+      //   console.warn(`Service config not found for id ${service.id}`);
+      //   return;
+      // }
 
+      // const lastSessionGB = sessionResult.rowCount! > 0
+      //   ? parseFloat(sessionResult.rows[0].last_session_gb) || 0
+      //   : 0;
       const lastSessionGB = sessionResult.rowCount! > 0
-        ? parseFloat(sessionResult.rows[0].last_session_gb) || 0
-        : 0;
+  ? parseFloat(sessionResult.rows[0].last_session_gb) || 0
+  : 0;
+
 
 
       const RESTART_THRESHOLD_GB = 0.01;
@@ -557,13 +566,21 @@ export class V2RayService {
         : Math.max(0, currentSessionGB - lastSessionGB);
 
       // Always update the per-server session tracker regardless of delta
-      await db.query(
-        `INSERT INTO user_server_sessions (user_config_id, server_id, last_session_gb, updated_at)
-       VALUES ($1, $2, $3, NOW())
-       ON CONFLICT (user_config_id, server_id)
-       DO UPDATE SET last_session_gb = $3, updated_at = NOW()`,
-        [service.id, serverId, currentSessionGB]
-      );
+      // await db.query(
+      //   `INSERT INTO user_server_sessions (user_config_id, server_id, last_session_gb, updated_at)
+      //  VALUES ($1, $2, $3, NOW())
+      //  ON CONFLICT (user_config_id, server_id)
+      //  DO UPDATE SET last_session_gb = $3, updated_at = NOW()`,
+      //   [service.id, serverId, currentSessionGB]
+      // );
+      // This upsert will now run on first visit too, creating the row
+await db.query(
+  `INSERT INTO user_server_sessions (user_config_id, server_id, last_session_gb, updated_at)
+   VALUES ($1, $2, $3, NOW())
+   ON CONFLICT (user_config_id, server_id)
+   DO UPDATE SET last_session_gb = $3, updated_at = NOW()`,
+  [service.id, serverId, currentSessionGB]
+);
 
       if (deltaGB === 0) return;
 
