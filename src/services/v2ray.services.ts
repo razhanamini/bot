@@ -4,6 +4,8 @@ import { v4 as uuidv4 } from 'uuid';
 import cron from 'node-cron';
 import db from '../database/database.service';
 import { BotService } from '../bot/bot.services';
+import crypto from 'crypto';
+
 import {
   V2RayConfig,
   Client,
@@ -280,44 +282,43 @@ export class V2RayService {
   }
 
 
-  private async storeUserConfigInDatabase(
-    params: ServiceCreateParams,
-    vlessLink: string,
-    client: Client,
-    server?: Server
-  ): Promise<void> {
-    try {
-      // const expiresAt = new Date();
-      // expiresAt.setDate(expiresAt.getDate() + params.durationDays);
-      const expiresAt = new Date(client.expireTime!);
+ private async storeUserConfigInDatabase(
+  params: ServiceCreateParams,
+  vlessLink: string,
+  client: Client,
+  server?: Server
+): Promise<void> {
+  try {
+    const expiresAt = new Date(client.expireTime!);
+    const subId = params.configName + crypto.randomBytes(4).toString('hex');
 
-
-      await db.query(
-        `INSERT INTO user_configs (
-          user_id, service_id, vless_link, status, expires_at,
-          data_used_gb, client_email, inbound_tag, data_limit_gb, config_name
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-        [
-          params.userId,
-          params.serviceId,
-          vlessLink,
-          'active',
-          expiresAt,
-          0.00,
-          client.email,
-          'vless-reality-inbound',
-          params.dataLimitGB,
-          params.configName
-        ]
-      );
-
-      console.log(`✅ User config stored in database`);
-    } catch (error: any) {
-      console.error('❌ Error storing user config in database:', error.message);
-      throw error;
-    }
+    await db.query(
+      `INSERT INTO user_configs (
+        user_id, service_id, vless_link, status, expires_at,
+        data_used_gb, client_email, inbound_tag, data_limit_gb,
+        config_name, user_uuid, sub_id
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+      [
+        params.userId,
+        params.serviceId,
+        vlessLink,
+        'active',
+        expiresAt,
+        0.00,
+        client.email,
+        'vless-reality-inbound',
+        params.dataLimitGB,
+        params.configName,
+        client.id,
+        subId
+      ]
+    );
+    console.log(`✅ User config stored in database`);
+  } catch (error: any) {
+    console.error('❌ Error storing user config in database:', error.message);
+    throw error;
   }
-
+}
   private generateVlessLinks(server: Server, inbound: any, client: Client): VlessLinkSet {
     const serverHost = server.domain;
     const serverPort = server.xray_port || 8445;

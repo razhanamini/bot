@@ -824,7 +824,12 @@ export class BotService {
         await db.updateUserBalance(user.id, -service.price);
         await ctx.reply(this.escapeMarkdown(BotMessages.purchaseSuccessful(service)), { parse_mode: 'MarkdownV2' });
       }
-      const subId = configName + crypto.randomBytes(4).toString('hex');
+      // const subId = configName + crypto.randomBytes(4).toString('hex');
+      const configResult = await db.query(
+  `SELECT sub_id FROM user_configs WHERE client_email = $1`,
+  [userEmail]
+);
+const subId = configResult.rows[0].sub_id;
       const subLinkMessage = BotMessages.subLinksMessage(subId);
       await ctx.sendMessage(this.escapeMarkdown(subLinkMessage), { parse_mode: 'MarkdownV2' });
 
