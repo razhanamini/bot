@@ -294,13 +294,12 @@ export class V2RayService {
 
       await db.query(
         `INSERT INTO user_configs (
-          user_id, service_id, server_id, vless_link, status, expires_at,
+          user_id, service_id, vless_link, status, expires_at,
           data_used_gb, client_email, inbound_tag, data_limit_gb
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
         [
           params.userId,
           params.serviceId,
-          9999,
           vlessLink,
           'active',
           expiresAt,
