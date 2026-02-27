@@ -451,7 +451,7 @@ export class BotService {
       await ctx.answerCbQuery('📷 در حال ساخت QR کد...');
 
       const qrBuffer = await BotMessages.getQrBuffer(
-        `https://${process.env.SUB_DOMAIN}/links/${subId}`
+        `${subId}`
       );
 
       await ctx.replyWithPhoto(
