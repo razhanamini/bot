@@ -449,3 +449,62 @@ CREATE TABLE gift_code_usages (
 );
 
 CREATE INDEX idx_gift_usages_user ON gift_code_usages(user_id);
+
+-- Referral settings (toggled/configured by admin)
+CREATE TABLE referral_settings (
+  id SERIAL PRIMARY KEY,
+  is_enabled BOOLEAN DEFAULT true,
+  commission_percent DECIMAL(5, 2) DEFAULT 60.00,
+  min_withdrawal_amount DECIMAL(10, 2) DEFAULT 100000.00,
+  max_referrals_per_user INTEGER DEFAULT 100,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+INSERT INTO referral_settings (is_enabled, commission_percent, min_withdrawal_amount, max_referrals_per_user)
+VALUES (true, 60.00, 100000.00, 100);
+
+-- Referral program table
+CREATE TABLE referrals (
+  id SERIAL PRIMARY KEY,
+  referrer_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  referred_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(referred_id) -- each user can only be referred once
+);
+
+-- Referral profile (users who joined the program)
+CREATE TABLE referral_profiles (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE UNIQUE,
+  card_number VARCHAR(50) NOT NULL,
+  card_owner_name VARCHAR(255) NOT NULL,
+  total_earned DECIMAL(10, 2) DEFAULT 0.00,
+  total_withdrawn DECIMAL(10, 2) DEFAULT 0.00,
+  pending_balance DECIMAL(10, 2) DEFAULT 0.00,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Withdrawal requests
+CREATE TABLE withdrawal_requests (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  amount DECIMAL(10, 2) NOT NULL,
+  card_number VARCHAR(50) NOT NULL,
+  card_owner_name VARCHAR(255) NOT NULL,
+  status VARCHAR(50) DEFAULT 'pending',
+  admin_message_id BIGINT,
+  admin_chat_id BIGINT,
+  receipt_photo TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  confirmed_at TIMESTAMP WITH TIME ZONE,
+  CONSTRAINT check_withdrawal_status CHECK (status IN ('pending', 'confirmed', 'declined'))
+);
+
+CREATE INDEX idx_referrals_referrer_id ON referrals(referrer_id);
+CREATE INDEX idx_referrals_referred_id ON referrals(referred_id);
+CREATE INDEX idx_referral_profiles_user_id ON referral_profiles(user_id);
+CREATE INDEX idx_withdrawal_requests_user_id ON withdrawal_requests(user_id);
+CREATE INDEX idx_withdrawal_requests_status ON withdrawal_requests(status);

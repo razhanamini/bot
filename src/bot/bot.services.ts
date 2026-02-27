@@ -17,7 +17,8 @@ const PERSIAN_BUTTONS = {
   SUPPORT: '🆘 پشتیبانی',
   MY_CONFIGS: '📡 کانفیگ های من',
   GIFT_CODE: '🎁 کد هدیه',  // Add this line
-  TRUST: '🤝 رضایت مشتری و اموزش'
+  TRUST: '🤝 رضایت مشتری و اموزش',
+  COOPERATION: '💵 همکاری در فروش'
 } as const;
 
 export class BotService {
@@ -28,7 +29,8 @@ export class BotService {
   private pendingServicePurchase = new Map<number, { serviceId: number; isTest: boolean }>();
   private pendingGiftCode = new Set<number>();   // ← add
   private pendingPayment = new Set<number>();    // ← add
-
+  private pendingReferral = new Map<number, { step: string }>();
+  private pendingWithdrawalReceipt = new Map<number, number>(); // adminTelegramId -> withdrawalId
   constructor() {
     const token = process.env.BOT_TOKEN;
     if (!token) {
@@ -76,6 +78,7 @@ export class BotService {
     this.bot.command('test_config', (ctx) => this.handleTestConfig(ctx)); // ✅ Fixed: changed from 'test_service' to 'test_config'
     this.bot.command('gift', (ctx) => this.handleGiftCode(ctx)); // Also add as command
     this.bot.command('trust', (ctx) => this.handleTrust(ctx));
+    this.bot.hears(PERSIAN_BUTTONS.COOPERATION, (ctx) => this.handleCooperation(ctx));
 
 
 
@@ -96,6 +99,157 @@ export class BotService {
 
 
   private setupCallbacks() {
+
+    // Refferal Callbacks:
+    this.bot.action('referral_confirm_register', async (ctx) => {
+      try {
+        const user = await db.getUserByTelegramId(ctx.from!.id);
+        const pending = this.pendingReferral.get(user.telegram_id) as any;
+        if (!pending) { await ctx.answerCbQuery('❌ خطا'); return; }
+
+        await db.createReferralProfile(user.id, pending.cardNumber, pending.cardOwner);
+        this.pendingReferral.delete(user.telegram_id);
+
+        const referralLink = `https://t.me/V2chainbot?start=ref_${user.telegram_id}`;
+        await ctx.answerCbQuery('✅ ثبت‌نام موفق');
+        await ctx.editMessageText(
+          `🎉 *ثبت‌نام در سیستم همکاری در فروش با موفقیت انجام شد\\!*\n\n` +
+          `🔗 لینک معرفی شما:\n\`${referralLink}\`\n\n` +
+          `این لینک را با دوستان خود به اشتراک بگذارید\\.`,
+          { parse_mode: 'MarkdownV2' }
+        );
+      } catch (error: any) {
+        console.error('Error confirming referral register:', error);
+        await ctx.answerCbQuery('❌ خطا در ثبت‌نام');
+      }
+    });
+
+    this.bot.action('referral_cancel', async (ctx) => {
+      const user = await db.getUserByTelegramId(ctx.from!.id);
+      this.pendingReferral.delete(user.telegram_id);
+      await ctx.answerCbQuery('❌ لغو شد');
+      await ctx.deleteMessage();
+    });
+
+    this.bot.action('referral_edit_card', async (ctx) => {
+      const user = await db.getUserByTelegramId(ctx.from!.id);
+      this.pendingReferral.set(user.telegram_id, { step: 'edit_card_number' } as any);
+      await ctx.answerCbQuery();
+      await ctx.editMessageText('✏️ شماره کارت جدید خود را وارد کنید:');
+    });
+
+    this.bot.action('referral_stats', async (ctx) => {
+      try {
+        const user = await db.getUserByTelegramId(ctx.from!.id);
+        const stats = await db.getReferralStats(user.id);
+        await ctx.answerCbQuery();
+        await ctx.editMessageText(
+          `📊 *آمار تفصیلی همکاری در فروش*\n\n` +
+          `👥 تعداد زیرمجموعه: ${stats?.total_referrals || 0} نفر\n` +
+          `💰 کل درآمد: ${Math.floor(stats?.total_earned || 0)} تومان\n` +
+          `💸 برداشت شده: ${Math.floor(stats?.total_withdrawn || 0)} تومان\n` +
+          `💳 موجودی قابل برداشت: ${Math.floor(stats?.pending_balance || 0)} تومان`,
+          {
+            parse_mode: 'Markdown',
+            reply_markup: {
+              inline_keyboard: [
+                [Markup.button.callback('🔙 بازگشت', 'referral_back_dashboard')]
+              ]
+            }
+          }
+        );
+      } catch (error: any) {
+        await ctx.answerCbQuery('❌ خطا');
+      }
+    });
+
+    this.bot.action('referral_withdraw', async (ctx) => {
+      try {
+        const user = await db.getUserByTelegramId(ctx.from!.id);
+        const profile = await db.getReferralProfile(user.id);
+        const settings = await db.getReferralSettings();
+        if (!profile) {
+
+          await ctx.sendMessage(
+            `❌ پنل همکاری وجود ندارد`,
+            { parse_mode: 'MarkdownV2' }
+          );
+          return;
+        }
+
+        if (profile.pending_balance < settings.min_withdrawal_amount) {
+          await ctx.answerCbQuery(`❌ حداقل مبلغ برداشت ${Math.floor(settings.min_withdrawal_amount)} تومان است`);
+          return;
+        }
+
+        const withdrawal = await db.createWithdrawalRequest(
+          user.id,
+          profile.pending_balance,
+          profile.card_number,
+          profile.card_owner_name
+        );
+
+        // Deduct from pending balance
+        await db.updateReferralProfile(user.id, {
+          pending_balance: 0,
+          total_withdrawn: profile.total_withdrawn + profile.pending_balance
+        });
+
+        // Notify admins
+        const adminMessage =
+          `💸 *درخواست برداشت جدید*\n\n` +
+          `👤 کاربر: @${user.username || user.telegram_id}\n` +
+          `💰 مبلغ: ${Math.floor(withdrawal.amount)} تومان\n` +
+          `💳 شماره کارت: ${withdrawal.card_number}\n` +
+          `👤 نام صاحب کارت: ${withdrawal.card_owner_name}\n` +
+          `🆔 شناسه درخواست: ${withdrawal.id}`;
+
+        for (const adminId of this.adminChatIds) {
+          const msg = await this.bot.telegram.sendMessage(adminId, adminMessage, {
+            parse_mode: 'Markdown',
+            reply_markup: {
+              inline_keyboard: [[
+                Markup.button.callback('✅ تایید و ارسال رسید', `confirm_withdrawal_${withdrawal.id}`),
+                Markup.button.callback('❌ رد درخواست', `decline_withdrawal_${withdrawal.id}`)
+              ]]
+            }
+          });
+          await db.updateWithdrawalRequest(withdrawal.id, {
+            admin_message_id: msg.message_id,
+            admin_chat_id: adminId
+          });
+        }
+
+        await ctx.answerCbQuery('✅ درخواست ارسال شد');
+        await ctx.editMessageText(
+          `✅ *درخواست برداشت ثبت شد*\n\n` +
+          `💰 مبلغ: ${Math.floor(withdrawal.amount)} تومان\n` +
+          `پس از تایید ادمین، مبلغ به کارت شما واریز خواهد شد.`,
+          { parse_mode: 'Markdown' }
+        );
+      } catch (error: any) {
+        console.error('Error in referral_withdraw:', error);
+        await ctx.answerCbQuery('❌ خطا در ثبت درخواست');
+      }
+    });
+
+    this.bot.action('referral_back_dashboard', async (ctx) => {
+      const user = await db.getUserByTelegramId(ctx.from!.id);
+      const profile = await db.getReferralProfile(user.id);
+      await ctx.answerCbQuery();
+      await ctx.deleteMessage();
+      await this.showReferralDashboard(ctx, user, profile);
+    });
+
+    this.bot.action(/^confirm_withdrawal_(\d+)$/, async (ctx) => {
+      await this.handleConfirmWithdrawal(ctx);
+    });
+
+    this.bot.action(/^decline_withdrawal_(\d+)$/, async (ctx) => {
+      await this.handleDeclineWithdrawal(ctx);
+    });
+
+    // other callbacks
     this.bot.action(/^myconf_(\d+)$/, async (ctx) => this.handleMyConfigDetail(ctx));
     this.bot.action(/^myconf_qr_(.+)$/, async (ctx) => this.handleMyConfigQR(ctx));
     this.bot.action('back_to_my_services', async (ctx) => {
@@ -117,12 +271,212 @@ export class BotService {
     this.bot.on('text', async (ctx) => this.handleText(ctx));
   }
 
+  // Handle Withdrawl Confirm and Declines:
 
+  async handleConfirmWithdrawal(ctx: any) {
+    try {
+      const withdrawalId = parseInt(ctx.match[1]);
+      const withdrawal = await db.getWithdrawalRequest(withdrawalId);
+      if (!withdrawal) { await ctx.answerCbQuery('❌ یافت نشد'); return; }
+      if (withdrawal.status !== 'pending') { await ctx.answerCbQuery('⚠️ قبلاً پردازش شده'); return; }
+
+      this.pendingWithdrawalReceipt.set(ctx.from.id, withdrawalId);
+      await ctx.answerCbQuery();
+      await ctx.reply('📸 لطفاً تصویر رسید پرداخت را ارسال کنید:');
+    } catch (error: any) {
+      await ctx.answerCbQuery('❌ خطا');
+    }
+  }
+
+  async handleDeclineWithdrawal(ctx: any) {
+    try {
+      const withdrawalId = parseInt(ctx.match[1]);
+      const withdrawal = await db.getWithdrawalRequest(withdrawalId);
+      if (!withdrawal) { await ctx.answerCbQuery('❌ یافت نشد'); return; }
+      if (withdrawal.status !== 'pending') { await ctx.answerCbQuery('⚠️ قبلاً پردازش شده'); return; }
+
+      await db.updateWithdrawalRequest(withdrawalId, { status: 'declined' });
+
+      // Refund pending balance
+      const profile = await db.getReferralProfile(withdrawal.user_id);
+      await db.updateReferralProfile(withdrawal.user_id, {
+        pending_balance: withdrawal.amount,
+        total_withdrawn: profile!.total_withdrawn - withdrawal.amount
+      });
+
+      await this.bot.telegram.sendMessage(
+        withdrawal.telegram_id,
+        `❌ *درخواست برداشت شما رد شد*\n\n💰 مبلغ ${Math.floor(withdrawal.amount)} تومان به موجودی شما بازگشت`,
+        { parse_mode: 'Markdown' }
+      );
+
+      await ctx.answerCbQuery('❌ رد شد');
+      await ctx.editMessageText((ctx.callbackQuery.message as any).text + '\n\n❌ رد شد', {
+        reply_markup: { inline_keyboard: [] }
+      });
+    } catch (error: any) {
+      await ctx.answerCbQuery('❌ خطا');
+    }
+  }
+
+  // Handle Cooperation
+
+  async handleCooperation(ctx: Context) {
+    try {
+      const user = await db.getUserByTelegramId(ctx.from!.id);
+      const profile = await db.getReferralProfile(user.id);
+      const settings = await db.getReferralSettings();
+
+      if (!settings.is_enabled) {
+        await ctx.reply('⚠️ سیستم همکاری در فروش در حال حاضر غیرفعال است', { parse_mode: 'Markdown' });
+        return;
+      }
+
+      if (profile) {
+        // Already registered — show dashboard
+        await this.showReferralDashboard(ctx, user, profile);
+        return;
+      }
+
+      // Not registered — show rules and onboarding
+      const settings2 = await db.getReferralSettings();
+      const message = `🤝 *همکاری در فروش V2Chain*\n\n` +
+        `با معرفی دوستان خود به V2Chain، از هر خرید آن‌ها *${settings2.commission_percent}٪* کمیسیون دریافت کنید\\!\n\n` +
+        `📋 *قوانین:*\n` +
+        `• کمیسیون هر خرید: ${settings2.commission_percent}٪\n` +
+        `• حداقل مبلغ برداشت: ${Math.floor(settings2.min_withdrawal_amount)} تومان\n` +
+        `• حداکثر تعداد زیرمجموعه: ${settings2.max_referrals_per_user} نفر\n` +
+        `• پرداخت کمیسیون پس از تایید ادمین\n\n` +
+        `برای شروع، شماره کارت بانکی خود را وارد کنید:`;
+
+      await ctx.reply(
+        this.escapeMarkdown(message),
+        { parse_mode: 'MarkdownV2' }
+      );
+      this.pendingReferral.set(user.telegram_id, { step: 'card_number' });
+    } catch (error: any) {
+      console.error('Error in handleCooperation:', error);
+      await ctx.reply('❌ خطایی رخ داد، لطفاً دوباره امتحان کنید');
+    }
+  }
+
+  private async showReferralDashboard(ctx: Context, user: any, profile: any) {
+    const stats = await db.getReferralStats(user.id);
+    const referralLink = `https://t.me/V2chainbot?start=ref_${user.telegram_id}`;
+
+    const message = `🤝 *داشبورد همکاری در فروش*\n\n` +
+      `👥 زیرمجموعه‌ها: ${stats?.total_referrals || 0} نفر\n` +
+      `💰 کل درآمد: ${Math.floor(profile.total_earned)} تومان\n` +
+      `💸 برداشت شده: ${Math.floor(profile.total_withdrawn)} تومان\n` +
+      `💳 موجودی قابل برداشت: ${Math.floor(profile.pending_balance)} تومان\n\n` +
+      `🔗 لینک معرفی شما:\n\`${referralLink}\``;
+
+    await ctx.reply(
+      this.escapeMarkdown(message),
+      {
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [
+            [Markup.button.callback('✏️ ویرایش اطلاعات کارت', 'referral_edit_card')],
+            [Markup.button.callback('💸 درخواست برداشت', 'referral_withdraw')],
+            [Markup.button.callback('📊 آمار تفصیلی', 'referral_stats')]
+          ]
+        }
+      }
+    );
+  }
+
+  async handleReferralTextInput(ctx: Context, user: any, text: string) {
+    const pending = this.pendingReferral.get(user.telegram_id);
+    if (!pending) return false;
+
+    if (pending.step === 'card_number') {
+      if (!/^\d{16}$/.test(text.replace(/-/g, ''))) {
+        await ctx.reply('❌ شماره کارت نامعتبر است لطفاً 16 رقم کارت را وارد کنید:');
+        return true;
+      }
+      this.pendingReferral.set(user.telegram_id, { step: 'card_owner', ...{ cardNumber: text.trim() } } as any);
+      await ctx.reply('✅ شماره کارت ثبت شد \n\nحالا نام صاحب کارت را به فارسی وارد کنید:');
+      return true;
+    }
+
+    if ((pending as any).step === 'card_owner') {
+      const cardNumber = (pending as any).cardNumber;
+      this.pendingReferral.set(user.telegram_id, {
+        step: 'confirm',
+        cardNumber,
+        cardOwner: text.trim()
+      } as any);
+
+      await ctx.reply(
+        `✅ اطلاعات شما:\n\n` +
+        `💳 شماره کارت: ${cardNumber}\n` +
+        `👤 نام صاحب کارت: ${text.trim()}\n\n` +
+        `آیا با قوانین همکاری در فروش موافقید؟`,
+        {
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: [
+              [Markup.button.callback('✅ موافقم و ثبت‌نام می‌کنم', 'referral_confirm_register')],
+              [Markup.button.callback('❌ انصراف', 'referral_cancel')]
+            ]
+          }
+        }
+      );
+      return true;
+    }
+
+    if ((pending as any).step === 'edit_card_number') {
+      if (!/^\d{16}$/.test(text.replace(/-/g, ''))) {
+        await ctx.reply('❌ شماره کارت نامعتبر است:');
+        return true;
+      }
+      this.pendingReferral.set(user.telegram_id, { step: 'edit_card_owner', cardNumber: text.trim() } as any);
+      await ctx.reply('✅ شماره کارت جدید ثبت شد \n\nنام صاحب کارت را وارد کنید:');
+      return true;
+    }
+
+    if ((pending as any).step === 'edit_card_owner') {
+      const cardNumber = (pending as any).cardNumber;
+      await db.updateReferralProfile(user.id, {
+        card_number: cardNumber,
+        card_owner_name: text.trim()
+      });
+      this.pendingReferral.delete(user.telegram_id);
+      await ctx.reply('✅ اطلاعات کارت با موفقیت به‌روزرسانی شد');
+      const profile = await db.getReferralProfile(user.id);
+      await this.showReferralDashboard(ctx, user, profile);
+      return true;
+    }
+
+    return false;
+  }
 
   // Handle Bot Start
 
   async handleStart(ctx: Context) {
+
     const user = await db.getUserByTelegramId(ctx.from!.id);
+
+    // Handle referral deep link
+    const startPayload = (ctx.message as any)?.text?.split(' ')[1];
+    if (startPayload?.startsWith('ref_')) {
+      const referrerTelegramId = parseInt(startPayload.replace('ref_', ''));
+      if (referrerTelegramId !== ctx.from!.id) {
+        const referrer = await db.query(
+          `SELECT * FROM users WHERE telegram_id = $1`,
+          [referrerTelegramId]
+        );
+        if (referrer.rows[0]) {
+          const settings = await db.getReferralSettings();
+          const referralCount = await db.getReferralCount(referrer.rows[0].id);
+          if (settings.is_enabled && referralCount < settings.max_referrals_per_user) {
+            await db.createReferral(referrer.rows[0].id, user.id);
+          }
+        }
+      }
+    }
+
     const message = BotMessages.welcomeMessage(user);
 
 
@@ -155,7 +509,9 @@ export class BotService {
         [PERSIAN_BUTTONS.TEST_CONFIG, PERSIAN_BUTTONS.ADD_FUNDS],
         [PERSIAN_BUTTONS.MY_ACCOUNT, PERSIAN_BUTTONS.SUPPORT],
         [PERSIAN_BUTTONS.MY_CONFIGS, PERSIAN_BUTTONS.GIFT_CODE],
-        [PERSIAN_BUTTONS.TRUST]
+        [PERSIAN_BUTTONS.TRUST],
+        [PERSIAN_BUTTONS.COOPERATION]
+
       ]).resize()
     });
 
@@ -589,6 +945,40 @@ export class BotService {
   }
 
   async handlePhoto(ctx: Context) {
+    // added for refferal:
+    // Add at the top of handlePhoto
+    const adminTelegramId = ctx.from!.id;
+    if (this.adminChatIds.includes(adminTelegramId) && this.pendingWithdrawalReceipt.has(adminTelegramId)) {
+      const withdrawalId = this.pendingWithdrawalReceipt.get(adminTelegramId)!;
+      this.pendingWithdrawalReceipt.delete(adminTelegramId);
+
+      const withdrawal = await db.getWithdrawalRequest(withdrawalId);
+      const photoFileId = (ctx.message as any).photo.slice(-1)[0].file_id;
+
+      if (!withdrawal) {
+        await ctx.sendMessage(
+          'withdrawal does not exist',
+          { parse_mode: 'MarkdownV2' }
+        );
+        return;
+      }
+
+      await db.updateWithdrawalRequest(withdrawalId, {
+        status: 'confirmed',
+        receipt_photo: photoFileId,
+        confirmed_at: new Date()
+      });
+
+      // Send receipt to user
+      await this.bot.telegram.sendPhoto(withdrawal.telegram_id, photoFileId, {
+        caption: `✅ *پرداخت تایید شد*\n\n💰 مبلغ ${Math.floor(withdrawal.amount)} تومان به کارت شما واریز شد`,
+        parse_mode: 'Markdown'
+      });
+
+      await ctx.reply('✅ رسید ارسال شد و درخواست تایید شد');
+      return;
+    }
+
     const user = await db.getUserByTelegramId(ctx.from!.id);
 
     // Get the latest pending payment for user
@@ -900,7 +1290,11 @@ export class BotService {
       return;
     }
 
-    // 4. Anything else — tell user to use keyboard
+    // 4. handle Refferal code
+    const referralHandled = await this.handleReferralTextInput(ctx, user, text);
+    if (referralHandled) return;
+
+    // 5. Anything else — tell user to use keyboard
     await ctx.reply(
       '⌨️ لطفاً از دکمه‌های منو استفاده کنید',
       {
@@ -972,6 +1366,22 @@ export class BotService {
         await ctx.reply(BotMessages.testConfigActivated(), { parse_mode: 'MarkdownV2' });
       } else {
         await db.updateUserBalance(user.id, -service.price);
+
+        // handle refferal codes
+        const referral = await db.getReferralByReferredId(user.id);
+        if (referral) {
+          const settings = await db.getReferralSettings();
+          if (settings.is_enabled) {
+            const commission = (service.price * settings.commission_percent) / 100;
+            await db.addReferralCommission(referral.referrer_id, commission);
+            // Notify referrer
+            await this.bot.telegram.sendMessage(
+              referral.referrer_telegram_id,
+              `💰 *کمیسیون جدید*\n\n${Math.floor(commission)} تومان به موجودی همکاری شما اضافه شد\\!`,
+              { parse_mode: 'MarkdownV2' }
+            );
+          }
+        }
         await ctx.reply(this.escapeMarkdown(BotMessages.purchaseSuccessful(service)), { parse_mode: 'MarkdownV2' });
       }
       // const subId = configName + crypto.randomBytes(4).toString('hex');

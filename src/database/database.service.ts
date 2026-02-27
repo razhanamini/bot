@@ -2,6 +2,14 @@ import { Pool } from 'pg';
 import dotenv from 'dotenv';
 import { Server } from '../types/v2ray.type'
 
+  import {
+  ReferralSettings,
+  ReferralProfile,
+  Referral,
+  ReferralStats,
+  WithdrawalRequest
+} from './models/referral.model';
+
 dotenv.config();
 
 class DatabaseService {
@@ -393,6 +401,141 @@ async getUserServices(userId: number): Promise<any[]> {
 
 
 
+
+  // Refferal database services
+
+
+async getReferralSettings(): Promise<ReferralSettings> {
+  const result = await this.query(`SELECT * FROM referral_settings LIMIT 1`);
+  return result.rows[0];
+}
+
+async updateReferralSettings(fields: Partial<ReferralSettings>): Promise<void> {
+  const keys = Object.keys(fields);
+  const values = Object.values(fields);
+  const setClause = keys.map((k, i) => `${k} = $${i + 1}`).join(', ');
+  await this.query(
+    `UPDATE referral_settings SET ${setClause}, updated_at = NOW()`,
+    values
+  );
+}
+
+async getReferralProfile(userId: number): Promise<ReferralProfile | null> {
+  const result = await this.query(
+    `SELECT * FROM referral_profiles WHERE user_id = $1`,
+    [userId]
+  );
+  return result.rows[0] || null;
+}
+
+async createReferralProfile(userId: number, cardNumber: string, cardOwnerName: string): Promise<ReferralProfile> {
+  const result = await this.query(
+    `INSERT INTO referral_profiles (user_id, card_number, card_owner_name)
+     VALUES ($1, $2, $3) RETURNING *`,
+    [userId, cardNumber, cardOwnerName]
+  );
+  return result.rows[0];
+}
+
+async updateReferralProfile(userId: number, fields: Partial<ReferralProfile>): Promise<void> {
+  const keys = Object.keys(fields);
+  const values = Object.values(fields);
+  const setClause = keys.map((k, i) => `${k} = $${i + 1}`).join(', ');
+  await this.query(
+    `UPDATE referral_profiles SET ${setClause}, updated_at = NOW() WHERE user_id = $${keys.length + 1}`,
+    [...values, userId]
+  );
+}
+
+async createReferral(referrerId: number, referredId: number): Promise<void> {
+  await this.query(
+    `INSERT INTO referrals (referrer_id, referred_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+    [referrerId, referredId]
+  );
+}
+
+async getReferralByReferredId(referredId: number): Promise<Referral | null> {
+  const result = await this.query(
+    `SELECT r.*, u.telegram_id as referrer_telegram_id
+     FROM referrals r
+     JOIN users u ON r.referrer_id = u.id
+     WHERE r.referred_id = $1`,
+    [referredId]
+  );
+  return result.rows[0] || null;
+}
+
+async getReferralStats(userId: number): Promise<ReferralStats | null> {
+  const result = await this.query(
+    `SELECT 
+      COUNT(r.id) as total_referrals,
+      rp.total_earned,
+      rp.total_withdrawn,
+      rp.pending_balance,
+      rp.card_number,
+      rp.card_owner_name
+     FROM referral_profiles rp
+     LEFT JOIN referrals r ON r.referrer_id = rp.user_id
+     WHERE rp.user_id = $1
+     GROUP BY rp.total_earned, rp.total_withdrawn, rp.pending_balance, rp.card_number, rp.card_owner_name`,
+    [userId]
+  );
+  return result.rows[0] || null;
+}
+
+async getReferralCount(userId: number): Promise<number> {
+  const result = await this.query(
+    `SELECT COUNT(*) FROM referrals WHERE referrer_id = $1`,
+    [userId]
+  );
+  return parseInt(result.rows[0].count);
+}
+
+async addReferralCommission(referrerId: number, amount: number): Promise<void> {
+  await this.query(
+    `UPDATE referral_profiles 
+     SET pending_balance = pending_balance + $1,
+         total_earned = total_earned + $1,
+         updated_at = NOW()
+     WHERE user_id = $2`,
+    [amount, referrerId]
+  );
+}
+
+async createWithdrawalRequest(
+  userId: number,
+  amount: number,
+  cardNumber: string,
+  cardOwnerName: string
+): Promise<WithdrawalRequest> {
+  const result = await this.query(
+    `INSERT INTO withdrawal_requests (user_id, amount, card_number, card_owner_name)
+     VALUES ($1, $2, $3, $4) RETURNING *`,
+    [userId, amount, cardNumber, cardOwnerName]
+  );
+  return result.rows[0];
+}
+
+async getWithdrawalRequest(id: number): Promise<WithdrawalRequest | null> {
+  const result = await this.query(
+    `SELECT wr.*, u.telegram_id
+     FROM withdrawal_requests wr
+     JOIN users u ON wr.user_id = u.id
+     WHERE wr.id = $1`,
+    [id]
+  );
+  return result.rows[0] || null;
+}
+
+async updateWithdrawalRequest(id: number, fields: Partial<WithdrawalRequest>): Promise<void> {
+  const keys = Object.keys(fields);
+  const values = Object.values(fields);
+  const setClause = keys.map((k, i) => `${k} = $${i + 1}`).join(', ');
+  await this.query(
+    `UPDATE withdrawal_requests SET ${setClause}, updated_at = NOW() WHERE id = $${keys.length + 1}`,
+    [...values, id]
+  );
+}
 }
 
 export default new DatabaseService();

@@ -43,7 +43,7 @@ router.get('/links/:subId', subLinksLimiter, async (req, res) => {
     // });
     const beautifiedLinks = rawLinks.map((link: string) => {
   const baseName = link.split('#')[0];
-  return `${baseName}#🇩🇪 V2Chain | Frankfurt |${configName} | @V2chainbot`;
+  return `${baseName}#☁️🇩🇪 @V2Chainbot | ${configName}`;
 });
 
     const encoded = Buffer.from(beautifiedLinks.join('\n')).toString('base64');
