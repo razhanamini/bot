@@ -538,7 +538,12 @@ async getWithdrawalRequest(id: number): Promise<WithdrawalRequest | null> {
      WHERE wr.id = $1`,
     [id]
   );
-  return result.rows[0] || null;
+  if (!result.rows[0]) return null;
+  const row = result.rows[0];
+  return {
+    ...row,
+    amount: parseFloat(row.amount)
+  };
 }
 
 async updateWithdrawalRequest(id: number, fields: Partial<WithdrawalRequest>): Promise<void> {
