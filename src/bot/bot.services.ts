@@ -192,7 +192,7 @@ export class BotService {
         // Deduct from pending balance
         await db.updateReferralProfile(user.id, {
           pending_balance: 0,
-          total_withdrawn: profile.total_withdrawn + profile.pending_balance
+          total_withdrawn: parseFloat(profile.total_withdrawn as any) + parseFloat(profile.pending_balance as any)
         });
 
         // Notify admins
@@ -301,7 +301,7 @@ export class BotService {
       const profile = await db.getReferralProfile(withdrawal.user_id);
       await db.updateReferralProfile(withdrawal.user_id, {
         pending_balance: withdrawal.amount,
-        total_withdrawn: profile!.total_withdrawn - withdrawal.amount
+        total_withdrawn: parseFloat(profile!.total_withdrawn as any) - parseFloat(withdrawal.amount as any)
       });
 
       const message =

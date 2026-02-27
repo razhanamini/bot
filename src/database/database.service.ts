@@ -420,12 +420,26 @@ async updateReferralSettings(fields: Partial<ReferralSettings>): Promise<void> {
   );
 }
 
+// async getReferralProfile(userId: number): Promise<ReferralProfile | null> {
+//   const result = await this.query(
+//     `SELECT * FROM referral_profiles WHERE user_id = $1`,
+//     [userId]
+//   );
+//   return result.rows[0] || null;
+// }
 async getReferralProfile(userId: number): Promise<ReferralProfile | null> {
   const result = await this.query(
     `SELECT * FROM referral_profiles WHERE user_id = $1`,
     [userId]
   );
-  return result.rows[0] || null;
+  if (!result.rows[0]) return null;
+  const row = result.rows[0];
+  return {
+    ...row,
+    total_earned: parseFloat(row.total_earned),
+    total_withdrawn: parseFloat(row.total_withdrawn),
+    pending_balance: parseFloat(row.pending_balance)
+  };
 }
 
 async createReferralProfile(userId: number, cardNumber: string, cardOwnerName: string): Promise<ReferralProfile> {
