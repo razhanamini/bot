@@ -10,7 +10,7 @@ const subLinksLimiter = rateLimit({
     }
 });
 
-const router = express.Router();
+export const router = express.Router();
 
 router.get('/links/:subId', subLinksLimiter, async (req, res) => {
     try {
@@ -29,9 +29,13 @@ router.get('/links/:subId', subLinksLimiter, async (req, res) => {
         }
 
         // Return each link on a new line (standard subscription format)
+        // const links = result.rows[0].vless_link.split(',').join('\n');
+        // res.setHeader('Content-Type', 'text/plain');
+        // res.send(links);
         const links = result.rows[0].vless_link.split(',').join('\n');
+        const encoded = Buffer.from(links).toString('base64');  // ← missing this
         res.setHeader('Content-Type', 'text/plain');
-        res.send(links);
+        res.send(encoded);
 
     } catch (error: any) {
         console.error('Error fetching sub links:', error.message);

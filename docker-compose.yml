@@ -33,6 +33,8 @@ services:
     volumes:
       - ./src:/app/src
       - ./uploads:/app/uploads
+    ports:
+    - "3000:3000"  # ← add this
 
   postgres-backup:
     image: postgres:15-alpine
