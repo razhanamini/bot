@@ -26,6 +26,8 @@ export class BotService {
   private adminChatIds: number[];
 
   private pendingServicePurchase = new Map<number, { serviceId: number; isTest: boolean }>();
+  private pendingGiftCode = new Set<number>();   // ← add
+  private pendingPayment = new Set<number>();    // ← add
 
   constructor() {
     const token = process.env.BOT_TOKEN;
@@ -94,6 +96,13 @@ export class BotService {
 
 
   private setupCallbacks() {
+    this.bot.action(/^my_config_(\d+)$/, async (ctx) => this.handleMyConfigDetail(ctx));
+    this.bot.action(/^my_config_qr_(.+)$/, async (ctx) => this.handleMyConfigQR(ctx));
+    this.bot.action('back_to_my_services', async (ctx) => {
+      await ctx.answerCbQuery();
+      await ctx.deleteMessage();
+      await this.handleMyServices(ctx);
+    });
     this.bot.action(/^service_(\d+)$/, async (ctx) => this.handleServiceSelect(ctx));
     this.bot.action(/^confirm_purchase_(\d+)$/, async (ctx) => this.handleConfirmPurchase(ctx));
     this.bot.action(/^cancel_purchase$/, async (ctx) => this.handleCancelPurchase(ctx));
@@ -156,6 +165,8 @@ export class BotService {
   // Handle Gift Code Oprtations
 
   async handleGiftCode(ctx: Context) {
+    const user = await db.getUserByTelegramId(ctx.from!.id);
+    this.pendingGiftCode.add(user.telegram_id);  // ← add
     await ctx.reply(
       `🎁 *کد هدیه*\n\n` +
       `لطفاً کد هدیه خود را ارسال کنید:`,
@@ -280,6 +291,7 @@ export class BotService {
     // const result = await v2rayServices.createService(params);
     this.pendingServicePurchase.set(user.telegram_id, { serviceId, isTest: false });
 
+
     await ctx.answerCbQuery();
     const message = BotMessages.serviceNamePrompt();
     await ctx.editMessageText(
@@ -338,10 +350,29 @@ export class BotService {
 
   // Hanlde My Services Operation
 
+  // async handleMyServices(ctx: Context) {
+  //   const user = await db.getUserByTelegramId(ctx.from!.id);
+
+  //   // Get user's services with accurate data usage from database
+  //   const userServices = await db.getUserServices(user.id);
+
+  //   if (userServices.length === 0) {
+  //     await ctx.reply(BotMessages.noActiveConfigs(), { parse_mode: 'MarkdownV2' });
+  //     return;
+  //   }
+
+  //   const messages = BotMessages.userServices(userServices);
+
+  //   for (const message of messages) {
+  //     await ctx.reply(
+  //       this.escapeMarkdown(message),
+  //       { parse_mode: 'MarkdownV2' }
+  //     );
+  //   }
+  // }
+
   async handleMyServices(ctx: Context) {
     const user = await db.getUserByTelegramId(ctx.from!.id);
-
-    // Get user's services with accurate data usage from database
     const userServices = await db.getUserServices(user.id);
 
     if (userServices.length === 0) {
@@ -349,14 +380,74 @@ export class BotService {
       return;
     }
 
-    const messages = BotMessages.userServices(userServices);
+    const buttons = userServices.map(service => [
+      Markup.button.callback(
+        `${service.config_name}`,
+        `my_config_${service.id}`
+      )
+    ]);
 
-    for (const message of messages) {
-      await ctx.reply(
-        this.escapeMarkdown(message),
-        { parse_mode: 'MarkdownV2' }
-      );
+    await ctx.reply('📋 *سرویس‌های من*\n\nیک سرویس را انتخاب کنید:', {
+      parse_mode: 'Markdown',
+      reply_markup: { inline_keyboard: buttons }
+    });
+  }
+
+
+  async handleMyConfigDetail(ctx: any) {
+    const configId = parseInt(ctx.match[1]);
+    const user = await db.getUserByTelegramId(ctx.from!.id);
+
+    const result = await db.query(
+      `SELECT * FROM user_configs WHERE id = $1 AND user_id = $2`,
+      [configId, user.id]
+    );
+
+    if (result.rowCount === 0) {
+      await ctx.answerCbQuery('❌ سرویس یافت نشد');
+      return;
     }
+
+    const config = result.rows[0];
+    const dataUsed = parseFloat(config.data_used_gb || 0).toFixed(2);
+    const dataLimit = config.data_limit_gb
+      ? `${parseFloat(config.data_limit_gb).toFixed(2)} GB`
+      : 'نامحدود';
+    const remainingDays = Math.ceil(
+      (new Date(config.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+    );
+
+    await ctx.answerCbQuery();
+    await ctx.editMessageText(
+      `📡 *${config.config_name}*\n\n` +
+      `📊 مصرف: ${dataUsed} GB / ${dataLimit}\n` +
+      `⏰ ${remainingDays} روز باقی مانده\n` +
+      `📌 وضعیت: ${config.status}\n\n` +
+      `🔗 لینک اشتراک:\n\`https://${process.env.SUB_DOMAIN}/links/${config.sub_id}\``,
+      {
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [
+            [Markup.button.callback('📷 دریافت QR کد', `my_config_qr_${config.sub_id}`)],
+            [Markup.button.callback('🔙 بازگشت', 'back_to_my_services')]
+          ]
+        }
+      }
+    );
+  }
+
+  async handleMyConfigQR(ctx: any) {
+    const subId = ctx.match[1];
+    await ctx.answerCbQuery('📷 در حال ساخت QR کد...');
+
+    const qrBuffer = await BotMessages.getQrBuffer(
+      subId
+    );
+
+    await ctx.replyWithPhoto(
+      { source: qrBuffer },
+      { caption: `🔗 لینک اشتراک برای اسکن` }
+    );
   }
 
   // Handle Test Config Operation
@@ -668,6 +759,9 @@ export class BotService {
 
 
   async handleAddFunds(ctx: Context) {
+    const user = await db.getUserByTelegramId(ctx.from!.id);
+    this.pendingPayment.add(user.telegram_id);  // ← add
+
     await ctx.reply(BotMessages.addFundsPrompt(), { parse_mode: 'MarkdownV2' });
   }
 
@@ -747,27 +841,69 @@ export class BotService {
   //     });
   //   }
   // }
+  // async handleText(ctx: Context) {
+  //   const text = (ctx.message as any).text;
+  //   const user = await db.getUserByTelegramId(ctx.from!.id);
+
+  //   const pending = this.pendingServicePurchase.get(user.telegram_id);
+  //   if (pending) {
+  //     await this.handleServiceNameInput(ctx, user, text, pending);
+  //     return;
+  //   }
+
+  //   const giftCodePattern = /^GIFT[-]?[A-Z0-9]{4,20}$/i;
+  //   if (giftCodePattern.test(text.trim())) {
+  //     await this.handleGiftCodeInput(ctx, user, text);
+  //     return;
+  //   }
+
+  //   if (!isNaN(parseFloat(text)) && parseFloat(text) > 0) {
+  //     await this.handlePaymentAmountInput(ctx, user, text);
+  //     return;
+  //   }
+  // }
   async handleText(ctx: Context) {
-    const text = (ctx.message as any).text;
-    const user = await db.getUserByTelegramId(ctx.from!.id);
+  const text = (ctx.message as any).text;
+  const user = await db.getUserByTelegramId(ctx.from!.id);
 
-    const pending = this.pendingServicePurchase.get(user.telegram_id);
-    if (pending) {
-      await this.handleServiceNameInput(ctx, user, text, pending);
-      return;
-    }
-
-    const giftCodePattern = /^GIFT[-]?[A-Z0-9]{4,20}$/i;
-    if (giftCodePattern.test(text.trim())) {
-      await this.handleGiftCodeInput(ctx, user, text);
-      return;
-    }
-
-    if (!isNaN(parseFloat(text)) && parseFloat(text) > 0) {
-      await this.handlePaymentAmountInput(ctx, user, text);
-      return;
-    }
+  // 1. Handle pending service name input
+  const pending = this.pendingServicePurchase.get(user.telegram_id);
+  if (pending) {
+    await this.handleServiceNameInput(ctx, user, text, pending);
+    return;
   }
+
+  // 2. Handle gift code only if user explicitly opened gift code flow
+  const giftCodePattern = /^GIFT[-]?[A-Z0-9]{4,20}$/i;
+  if (this.pendingGiftCode.has(user.telegram_id) && giftCodePattern.test(text.trim())) {
+    await this.handleGiftCodeInput(ctx, user, text);
+    return;
+  }
+
+  // 3. Handle payment amount only if user explicitly opened add funds flow
+  if (this.pendingPayment.has(user.telegram_id) && !isNaN(parseFloat(text)) && parseFloat(text) > 0) {
+    await this.handlePaymentAmountInput(ctx, user, text);
+    return;
+  }
+
+  // 4. Anything else — tell user to use keyboard
+  await ctx.reply(
+    '⌨️ لطفاً از دکمه‌های منو استفاده کنید',
+    {
+      parse_mode: 'Markdown',
+      reply_markup: {
+        keyboard: [
+          [PERSIAN_BUTTONS.BUY, PERSIAN_BUTTONS.MY_SERVICES],
+          [PERSIAN_BUTTONS.TEST_CONFIG, PERSIAN_BUTTONS.ADD_FUNDS],
+          [PERSIAN_BUTTONS.MY_ACCOUNT, PERSIAN_BUTTONS.SUPPORT],
+          [PERSIAN_BUTTONS.MY_CONFIGS, PERSIAN_BUTTONS.GIFT_CODE],
+          [PERSIAN_BUTTONS.TRUST]
+        ],
+        resize_keyboard: true
+      }
+    }
+  );
+}
 
   private async handleServiceNameInput(ctx: Context, user: any, text: string, pending: { serviceId: number; isTest: boolean }) {
     const nameRegex = /^[a-zA-Z0-9]+$/;
@@ -826,10 +962,10 @@ export class BotService {
       }
       // const subId = configName + crypto.randomBytes(4).toString('hex');
       const configResult = await db.query(
-  `SELECT sub_id FROM user_configs WHERE client_email = $1`,
-  [userEmail]
-);
-const subId = configResult.rows[0].sub_id;
+        `SELECT sub_id FROM user_configs WHERE client_email = $1`,
+        [userEmail]
+      );
+      const subId = configResult.rows[0].sub_id;
       const subLinkMessage = BotMessages.subLinksMessage(subId);
       await ctx.sendMessage(this.escapeMarkdown(subLinkMessage), { parse_mode: 'MarkdownV2' });
 
@@ -846,6 +982,7 @@ const subId = configResult.rows[0].sub_id;
   }
 
   private async handleGiftCodeInput(ctx: Context, user: any, text: string) {
+    this.pendingGiftCode.delete(user.telegram_id);  // ← add at top
     const code = text.trim().toUpperCase();
     const processingMsg = await ctx.reply('🔄 در حال بررسی کد هدیه...');
     const validation = await db.validateGiftCode(code, user.id);
@@ -883,6 +1020,7 @@ const subId = configResult.rows[0].sub_id;
   }
 
   private async handlePaymentAmountInput(ctx: Context, user: any, text: string) {
+    this.pendingPayment.delete(user.telegram_id);  // ← add at top
     const amount = parseFloat(text);
     const cardNumber = process.env.PAYMENT_CARD_NUMBER || '1234-5678-9012-3456';
     const cardOwner = process.env.CARD_OWNER || 'alex';

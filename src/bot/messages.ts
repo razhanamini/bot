@@ -631,11 +631,12 @@ export class BotMessages {
 
     // ===== Individual Service Messages =====
     services.forEach((service, index) => {
-      const dataUsed = parseFloat(service.data_used_gb || 0).toFixed(2);
 
       const dataLimit = service.data_limit_gb
-        ? `${service.data_limit_gb.toString()} GB`
+        ? `${parseFloat(service.data_limit_gb).toFixed(2)} GB`
         : 'نامحدود';
+
+      const dataUsed = parseFloat(service.data_used_gb || 0).toFixed(2);
 
       const remainingDays = Math.ceil(
         (new Date(service.expires_at).getTime() - Date.now()) /
@@ -717,7 +718,7 @@ export class BotMessages {
       `می‌توانید با استفاده از لینک زیر، اشتراک کانفیگ‌های خود را دریافت کنید.\n` +
       `کافی است این لینک را داخل برنامه V2Ray یا V2RayNG در بخش Subscription وارد (Import) کنید.\n\n` +
       `لینک اشتراک:\n` +
-      `https://v2chain.links.gemminie.xyz/${subId}\n\n` +
+      `https://v2chain.links.gemminie.xyz/links/${subId}\n\n` +
       `پس از اضافه کردن لینک، برنامه را به‌روزرسانی (Update) کنید تا کانفیگ‌ها دریافت شوند.`
     );
   }
