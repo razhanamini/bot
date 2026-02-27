@@ -111,13 +111,13 @@ export class BotService {
         this.pendingReferral.delete(user.telegram_id);
 
         const referralLink = `https://t.me/V2chainbot?start=ref_${user.telegram_id}`;
+        const message =
+          `🎉 ثبت‌نام در سیستم همکاری در فروش با موفقیت انجام شد!\n\n` +
+          `🔗 لینک معرفی شما:\n${referralLink}\n\n` +
+          `این لینک را با دوستان خود به اشتراک بگذارید.`;
+
         await ctx.answerCbQuery('✅ ثبت‌نام موفق');
-        await ctx.editMessageText(
-          `🎉 *ثبت‌نام در سیستم همکاری در فروش با موفقیت انجام شد\\!*\n\n` +
-          `🔗 لینک معرفی شما:\n\`${referralLink}\`\n\n` +
-          `این لینک را با دوستان خود به اشتراک بگذارید\\.`,
-          { parse_mode: 'MarkdownV2' }
-        );
+        await ctx.editMessageText(this.escapeMarkdown(message), { parse_mode: 'MarkdownV2' });
       } catch (error: any) {
         console.error('Error confirming referral register:', error);
         await ctx.answerCbQuery('❌ خطا در ثبت‌نام');
@@ -143,21 +143,21 @@ export class BotService {
         const user = await db.getUserByTelegramId(ctx.from!.id);
         const stats = await db.getReferralStats(user.id);
         await ctx.answerCbQuery();
-        await ctx.editMessageText(
-          `📊 *آمار تفصیلی همکاری در فروش*\n\n` +
+        const message =
+          `📊 آمار تفصیلی همکاری در فروش\n\n` +
           `👥 تعداد زیرمجموعه: ${stats?.total_referrals || 0} نفر\n` +
           `💰 کل درآمد: ${Math.floor(stats?.total_earned || 0)} تومان\n` +
           `💸 برداشت شده: ${Math.floor(stats?.total_withdrawn || 0)} تومان\n` +
-          `💳 موجودی قابل برداشت: ${Math.floor(stats?.pending_balance || 0)} تومان`,
-          {
-            parse_mode: 'Markdown',
-            reply_markup: {
-              inline_keyboard: [
-                [Markup.button.callback('🔙 بازگشت', 'referral_back_dashboard')]
-              ]
-            }
+          `💳 موجودی قابل برداشت: ${Math.floor(stats?.pending_balance || 0)} تومان`;
+
+        await ctx.editMessageText(this.escapeMarkdown(message), {
+          parse_mode: 'MarkdownV2',
+          reply_markup: {
+            inline_keyboard: [
+              [Markup.button.callback('🔙 بازگشت', 'referral_back_dashboard')]
+            ]
           }
-        );
+        });
       } catch (error: any) {
         await ctx.answerCbQuery('❌ خطا');
       }
@@ -197,7 +197,7 @@ export class BotService {
 
         // Notify admins
         const adminMessage =
-          `💸 *درخواست برداشت جدید*\n\n` +
+          `💸 درخواست برداشت جدید\n\n` +
           `👤 کاربر: @${user.username || user.telegram_id}\n` +
           `💰 مبلغ: ${Math.floor(withdrawal.amount)} تومان\n` +
           `💳 شماره کارت: ${withdrawal.card_number}\n` +
@@ -205,7 +205,7 @@ export class BotService {
           `🆔 شناسه درخواست: ${withdrawal.id}`;
 
         for (const adminId of this.adminChatIds) {
-          const msg = await this.bot.telegram.sendMessage(adminId, adminMessage, {
+          const msg = await this.bot.telegram.sendMessage(adminId, this.escapeMarkdown(adminMessage), {
             parse_mode: 'Markdown',
             reply_markup: {
               inline_keyboard: [[
@@ -221,12 +221,12 @@ export class BotService {
         }
 
         await ctx.answerCbQuery('✅ درخواست ارسال شد');
-        await ctx.editMessageText(
-          `✅ *درخواست برداشت ثبت شد*\n\n` +
+        const confirmMessage =
+          `✅ درخواست برداشت ثبت شد\n\n` +
           `💰 مبلغ: ${Math.floor(withdrawal.amount)} تومان\n` +
-          `پس از تایید ادمین، مبلغ به کارت شما واریز خواهد شد.`,
-          { parse_mode: 'Markdown' }
-        );
+          `پس از تایید ادمین، مبلغ به کارت شما واریز خواهد شد.`;
+
+        await ctx.editMessageText(this.escapeMarkdown(confirmMessage), { parse_mode: 'MarkdownV2' });
       } catch (error: any) {
         console.error('Error in referral_withdraw:', error);
         await ctx.answerCbQuery('❌ خطا در ثبت درخواست');
@@ -304,10 +304,14 @@ export class BotService {
         total_withdrawn: profile!.total_withdrawn - withdrawal.amount
       });
 
+      const message =
+        `❌ درخواست برداشت شما رد شد\n\n` +
+        `💰 مبلغ ${Math.floor(withdrawal.amount)} تومان به موجودی شما بازگشت`;
+
       await this.bot.telegram.sendMessage(
         withdrawal.telegram_id,
-        `❌ *درخواست برداشت شما رد شد*\n\n💰 مبلغ ${Math.floor(withdrawal.amount)} تومان به موجودی شما بازگشت`,
-        { parse_mode: 'Markdown' }
+        this.escapeMarkdown(message),
+        { parse_mode: 'MarkdownV2' }
       );
 
       await ctx.answerCbQuery('❌ رد شد');
@@ -340,19 +344,17 @@ export class BotService {
 
       // Not registered — show rules and onboarding
       const settings2 = await db.getReferralSettings();
-      const message = `🤝 *همکاری در فروش V2Chain*\n\n` +
-        `با معرفی دوستان خود به V2Chain، از هر خرید آن‌ها *${settings2.commission_percent}٪* کمیسیون دریافت کنید\\!\n\n` +
-        `📋 *قوانین:*\n` +
-        `• کمیسیون هر خرید: ${settings2.commission_percent}٪\n` +
-        `• حداقل مبلغ برداشت: ${Math.floor(settings2.min_withdrawal_amount)} تومان\n` +
-        `• حداکثر تعداد زیرمجموعه: ${settings2.max_referrals_per_user} نفر\n` +
+      const message =
+        `🤝 همکاری در فروش V2Chain\n\n` +
+        `با معرفی دوستان خود به V2Chain، از هر خرید آن‌ها ${settings.commission_percent}٪ کمیسیون دریافت کنید!\n\n` +
+        `📋 قوانین:\n` +
+        `• کمیسیون هر خرید: ${settings.commission_percent}٪\n` +
+        `• حداقل مبلغ برداشت: ${Math.floor(settings.min_withdrawal_amount)} تومان\n` +
+        `• حداکثر تعداد زیرمجموعه: ${settings.max_referrals_per_user} نفر\n` +
         `• پرداخت کمیسیون پس از تایید ادمین\n\n` +
         `برای شروع، شماره کارت بانکی خود را وارد کنید:`;
 
-      await ctx.reply(
-        this.escapeMarkdown(message),
-        { parse_mode: 'MarkdownV2' }
-      );
+      await ctx.reply(this.escapeMarkdown(message), { parse_mode: 'MarkdownV2' });
       this.pendingReferral.set(user.telegram_id, { step: 'card_number' });
     } catch (error: any) {
       console.error('Error in handleCooperation:', error);
@@ -364,26 +366,24 @@ export class BotService {
     const stats = await db.getReferralStats(user.id);
     const referralLink = `https://t.me/V2chainbot?start=ref_${user.telegram_id}`;
 
-    const message = `🤝 *داشبورد همکاری در فروش*\n\n` +
+    const message =
+      `🤝 داشبورد همکاری در فروش\n\n` +
       `👥 زیرمجموعه‌ها: ${stats?.total_referrals || 0} نفر\n` +
       `💰 کل درآمد: ${Math.floor(profile.total_earned)} تومان\n` +
       `💸 برداشت شده: ${Math.floor(profile.total_withdrawn)} تومان\n` +
       `💳 موجودی قابل برداشت: ${Math.floor(profile.pending_balance)} تومان\n\n` +
-      `🔗 لینک معرفی شما:\n\`${referralLink}\``;
+      `🔗 لینک معرفی شما:\n${referralLink}`;
 
-    await ctx.reply(
-      this.escapeMarkdown(message),
-      {
-        parse_mode: 'Markdown',
-        reply_markup: {
-          inline_keyboard: [
-            [Markup.button.callback('✏️ ویرایش اطلاعات کارت', 'referral_edit_card')],
-            [Markup.button.callback('💸 درخواست برداشت', 'referral_withdraw')],
-            [Markup.button.callback('📊 آمار تفصیلی', 'referral_stats')]
-          ]
-        }
+    await ctx.reply(this.escapeMarkdown(message), {
+      parse_mode: 'MarkdownV2',
+      reply_markup: {
+        inline_keyboard: [
+          [Markup.button.callback('✏️ ویرایش اطلاعات کارت', 'referral_edit_card')],
+          [Markup.button.callback('💸 درخواست برداشت', 'referral_withdraw')],
+          [Markup.button.callback('📊 آمار تفصیلی', 'referral_stats')]
+        ]
       }
-    );
+    });
   }
 
   async handleReferralTextInput(ctx: Context, user: any, text: string) {
@@ -970,9 +970,13 @@ export class BotService {
       });
 
       // Send receipt to user
+      const message =
+        `✅ پرداخت تایید شد\n\n` +
+        `💰 مبلغ ${Math.floor(withdrawal.amount)} تومان به کارت شما واریز شد`;
+
       await this.bot.telegram.sendPhoto(withdrawal.telegram_id, photoFileId, {
-        caption: `✅ *پرداخت تایید شد*\n\n💰 مبلغ ${Math.floor(withdrawal.amount)} تومان به کارت شما واریز شد`,
-        parse_mode: 'Markdown'
+        caption: this.escapeMarkdown(message),
+        parse_mode: 'MarkdownV2'
       });
 
       await ctx.reply('✅ رسید ارسال شد و درخواست تایید شد');
@@ -1375,9 +1379,13 @@ export class BotService {
             const commission = (service.price * settings.commission_percent) / 100;
             await db.addReferralCommission(referral.referrer_id, commission);
             // Notify referrer
+            const commissionMessage =
+              `💰 کمیسیون جدید\n\n` +
+              `${Math.floor(commission)} تومان به موجودی همکاری شما اضافه شد!`;
+
             await this.bot.telegram.sendMessage(
               referral.referrer_telegram_id,
-              `💰 *کمیسیون جدید*\n\n${Math.floor(commission)} تومان به موجودی همکاری شما اضافه شد\\!`,
+              this.escapeMarkdown(commissionMessage),
               { parse_mode: 'MarkdownV2' }
             );
           }
