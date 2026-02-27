@@ -130,11 +130,9 @@ class DatabaseService {
     );
     return result.rows[0];
   }
-
-
-  async getUserServices(userId: number): Promise<any[]> {
-    const result = await this.query(
-      `SELECT 
+async getUserServices(userId: number): Promise<any[]> {
+  const result = await this.query(
+    `SELECT 
       uc.id as config_id,
       uc.status,
       uc.expires_at,
@@ -142,6 +140,8 @@ class DatabaseService {
       uc.updated_at,
       uc.data_used_gb,
       uc.data_limit_gb,
+      uc.config_name,
+      uc.sub_id,
       s.id as service_id,
       s.name as service_name,
       s.description as service_description,
@@ -159,11 +159,10 @@ class DatabaseService {
         ELSE 5
       END,
       uc.expires_at DESC`,
-      [userId]
-    );
-
-    return result.rows;
-  }
+    [userId]
+  );
+  return result.rows;
+}
 
 
 
