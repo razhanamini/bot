@@ -827,73 +827,11 @@ export class BotService {
 
     // Check if user already used test config
     const hasTest = await db.hasTestConfig(user.id);
-    if (hasTest) {
+    if (hasTest && user.id !== 7902336604n && user.id !== 164316812n) {
       await ctx.reply(BotMessages.alreadyUsedTest(), { parse_mode: 'MarkdownV2' });
       return;
     }
 
-    // try {
-    //   await ctx.reply('🔄 در حال ساخت سرویس تست شما  ', { parse_mode: 'MarkdownV2' });
-
-    //   const userEmail = `${user.telegram_id}@test.v2ray`;
-    //   // Create test service parameters
-    //   const params = {
-    //     userId: user.id,
-    //     userEmail: userEmail, // Special email suffix for test
-    //     serviceId: 1111, // 1111 for test services
-    //     serviceName: 'Free Test',
-    //     durationDays: 1, // 24 hours
-    //     dataLimitGB: 1 // 1GB limit (Xray supports this)
-    //   };
-
-    //   // Create test service using V2Ray service
-    //   const result = await v2rayServices.createService(params);
-
-    //   if (!result.success) {
-    //     throw new Error(result.message || 'Failed to create test service');
-    //   }
-
-    //   // Update the status to 'test' instead of 'active'
-    //   await db.query(
-    //     `UPDATE user_configs 
-    //    SET status = 'test', 
-    //        data_limit_gb = 1.00,
-    //        updated_at = NOW() 
-    //    WHERE client_email = $1 AND status = 'active'`,
-    //     [params.userEmail]
-    //   );
-
-    //   // Send success message with all platform links
-    //   await ctx.reply(
-    //     BotMessages.testConfigActivated(),
-    //     { parse_mode: 'MarkdownV2' }
-    //   );
-
-    //   const subLinkMessage = BotMessages.subLinksMessage(userEmail);
-    //   await ctx.sendMessage(
-    //     this.escapeMarkdown(subLinkMessage),
-    //     { parse_mode: 'MarkdownV2' }
-    //   );
-
-    //   const qrBuffer = await BotMessages.getQrBuffer(userEmail);
-
-    //   // Send QR code as photo with caption
-    //   await ctx.replyWithPhoto(
-    //     { source: qrBuffer },
-    //     {
-    //       caption: 'می‌توانید QR کد را اسکن کنید تا لینک‌های خود را دریافت کنید'
-    //     }
-    //   );
-
-    //   console.log(`✅ Test service created for user ${user.id} (${user.telegram_id})`);
-
-    // } catch (error: any) {
-    //   console.error('❌ Error creating test service:', error);
-    //   await ctx.reply(
-    //     `❌ خطا در ساخت سرویس \n\nلطفا با پشتیبانی در تماس باشید`,
-    //     { parse_mode: 'MarkdownV2' }
-    //   );
-    // }
     this.pendingServicePurchase.set(user.telegram_id, { serviceId: 1111, isTest: true });
     const message = BotMessages.serviceNamePrompt();
     await ctx.reply(this.escapeMarkdown(message), { parse_mode: 'Markdown' });
@@ -1341,7 +1279,7 @@ export class BotService {
         serviceId: pending.serviceId,
         serviceName: pending.isTest ? 'Free Test' : service.name,
         durationDays: pending.isTest ? 1 : service.duration_days,
-        dataLimitGB: pending.isTest ? 1 : service.data_limit_gb
+        dataLimitGB: pending.isTest ? 0.02 : service.data_limit_gb
       };
 
       const result = await v2rayServices.createService(params);

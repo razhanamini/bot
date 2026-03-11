@@ -236,7 +236,7 @@ export class V2RayService {
       const newClient: Client = {
         id: uuid,
         email: params.userEmail,
-        flow: 'xtls-rprx-vision',
+        flow: '',
         limitIp: 0,
         totalGB: params.dataLimitGB?.toString(),
         expireTime: expireTime,
@@ -258,7 +258,7 @@ export class V2RayService {
           .replace('USER_UUID', uuid)
           .replace('USER_EMAIL', params.configName);
 
-        console.log(`✅ Service created for user ${params.userEmail} on server ${server.name}`);
+        console.log(`✅ Service created for user ${params.configName} on server ${server.name}`);
         return link;
       }));
 
